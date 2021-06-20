@@ -23,6 +23,7 @@ import (
 	"os"
 	"path"
 
+	"github.com/dalyisaac/mstodo/utils"
 	"github.com/spf13/cobra"
 
 	homedir "github.com/mitchellh/go-homedir"
@@ -35,6 +36,7 @@ type Config struct {
 	ClientSecret string `mapstructure:"client-secret"`
 	AuthTimeout  int    `mapstructure:"auth-timeout"`
 	Port         int    `mapstructure:"port"`
+	TableStyle   string `mapstructure:"table-style"`
 }
 
 var (
@@ -42,6 +44,7 @@ var (
 	cliConfig      Config
 	portStr        string
 	authTimeoutStr string
+	tableStyle     string
 )
 
 // rootCmd represents the base command when called without any subcommands
@@ -74,6 +77,10 @@ func init() {
 	// auth timeout
 	rootCmd.PersistentFlags().StringVar(&authTimeoutStr, "auth-timeout", "", "seconds to wait before giving up on authentication and exiting")
 	viper.BindPFlag("auth-timeout", rootCmd.PersistentFlags().Lookup("auth-timeout"))
+
+	// table style
+	rootCmd.PersistentFlags().StringVarP(&tableStyle, "table-style", "t", "Rounded", "the style for the table")
+	viper.BindPFlag("table-style", rootCmd.PersistentFlags().Lookup("table-style"))
 }
 
 // initConfig reads in config file and ENV variables if set.
@@ -125,6 +132,10 @@ func validateConfig() error {
 	// auth timeout
 	if cliConfig.AuthTimeout <= 0 {
 		return errors.New("auth-timeout must be greater than 0")
+	}
+
+	if !utils.IsTableStyleValid(cliConfig.TableStyle) {
+		return fmt.Errorf("%s is an invalid table style", cliConfig.TableStyle)
 	}
 
 	return nil

@@ -21,6 +21,10 @@ import (
 	"fmt"
 
 	"github.com/dalyisaac/mstodo/api"
+	"github.com/dalyisaac/mstodo/types"
+	"github.com/dalyisaac/mstodo/utils"
+	"github.com/jedib0t/go-pretty/v6/table"
+	"github.com/jedib0t/go-pretty/v6/text"
 	"github.com/spf13/cobra"
 )
 
@@ -36,13 +40,14 @@ var listCmd = &cobra.Command{
 			return
 		}
 
-		resp, err := req.Get("/me/todo/lists")
+		resp, err := req.SetResult(&types.TodoTaskListResponse{}).Get("/me/todo/lists")
 		if err != nil {
 			fmt.Println("Error getting lists:", err)
 			return
 		}
 
-		fmt.Println("Result:", resp)
+		result := resp.Result().(*types.TodoTaskListResponse)
+		printTaskList(result.Value)
 	},
 }
 
@@ -58,4 +63,25 @@ func init() {
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
 	// listCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+}
+
+func printTaskList(taskList types.TodoTaskList) {
+	t := utils.CreateFormattedTable(
+		&table.Row{"Name", "Owner", "Shared"},
+		&[]table.ColumnConfig{
+			{Name: "Name", Align: text.AlignLeft, Transformer: utils.Transformer},
+			{Name: "Owner", Align: text.AlignCenter, Transformer: utils.Transformer},
+			{Name: "Shared", Align: text.AlignCenter, Transformer: utils.Transformer},
+		},
+	)
+
+	for _, taskItem := range taskList {
+		t.AppendRow(table.Row{
+			taskItem.DisplayName,
+			taskItem.IsOwner,
+			taskItem.IsShared,
+		})
+	}
+
+	t.Render()
 }
