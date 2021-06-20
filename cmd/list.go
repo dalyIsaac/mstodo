@@ -19,6 +19,7 @@ package cmd
 
 import (
 	"fmt"
+	"regexp"
 
 	"github.com/dalyisaac/mstodo/api"
 	"github.com/dalyisaac/mstodo/types"
@@ -28,12 +29,22 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var (
+	filter string
+)
+
 // listCmd represents the list command
 var listCmd = &cobra.Command{
 	Use:   "list",
 	Short: "Get a list of the task lists",
 	Long:  `Get a list of the Microsoft To Do task lists`,
 	Run: func(cmd *cobra.Command, args []string) {
+		r, err := regexp.Compile(filter)
+		if err != nil {
+			fmt.Println("Error creating regex:", err)
+			return
+		}
+
 		req, err := api.CreateRequest()
 		if err != nil {
 			fmt.Println("error creating request:", err)
@@ -47,12 +58,13 @@ var listCmd = &cobra.Command{
 		}
 
 		result := resp.Result().(*types.TodoTaskListResponse)
-		printTaskList(result.Value)
+		printTaskList(result.Value, r)
 	},
 }
 
 func init() {
 	rootCmd.AddCommand(listCmd)
+	listCmd.PersistentFlags().StringVarP(&filter, "filter", "f", ".", "Filter the lists which contain this regex")
 
 	// Here you will define your flags and configuration settings.
 
@@ -65,7 +77,7 @@ func init() {
 	// listCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }
 
-func printTaskList(taskList types.TodoTaskList) {
+func printTaskList(taskList types.TodoTaskList, r *regexp.Regexp) {
 	t := utils.CreateFormattedTable(
 		&table.Row{"Name", "Owner", "Shared"},
 		&[]table.ColumnConfig{
@@ -76,11 +88,13 @@ func printTaskList(taskList types.TodoTaskList) {
 	)
 
 	for _, taskItem := range taskList {
-		t.AppendRow(table.Row{
-			taskItem.DisplayName,
-			taskItem.IsOwner,
-			taskItem.IsShared,
-		})
+		if r.MatchString(taskItem.DisplayName) {
+			t.AppendRow(table.Row{
+				taskItem.DisplayName,
+				taskItem.IsOwner,
+				taskItem.IsShared,
+			})
+		}
 	}
 
 	t.Render()
