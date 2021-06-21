@@ -29,9 +29,15 @@ import (
 )
 
 var (
-	filterFlag, sortFlag string
-	showIdFlag           bool
+	filterFlag, sortFlag, excludeFlag string
+	showIdFlag                        bool
 )
+
+var listColumns = []table.ColumnConfig{
+	{Name: "Name", Align: text.AlignLeft, Transformer: utils.Transformer},
+	{Name: "Owner", Align: text.AlignCenter, Transformer: utils.Transformer},
+	{Name: "Shared", Align: text.AlignCenter, Transformer: utils.Transformer},
+}
 
 // listCmd represents the list command
 var listCmd = &cobra.Command{
@@ -51,6 +57,12 @@ var listCmd = &cobra.Command{
 			return err
 		}
 
+		// Construct excluded columns
+		cols, err := utils.GetAllowedColumns(excludeFlag, listColumns)
+		if err != nil {
+			return err
+		}
+
 		// Create request
 		req, err := api.CreateRequest()
 		if err != nil {
@@ -65,7 +77,7 @@ var listCmd = &cobra.Command{
 
 		// Display results
 		result := resp.Result().(*types.TodoTaskListResponse)
-		printTaskList(result.Value, r, sortMode)
+		printTaskList(result.Value, cols, r, sortMode)
 		return nil
 	},
 }
@@ -74,23 +86,20 @@ func init() {
 	rootCmd.AddCommand(listCmd)
 	listCmd.Flags().StringVarP(&filterFlag, "filter", "f", ".", "Filter the lists which contain this regex")
 	listCmd.Flags().StringVarP(&sortFlag, "sort", "s", "none", "Sort by the name - choices: "+utils.GetSortOptions())
+	listCmd.Flags().StringVarP(&excludeFlag, "exclude", "x", "", "Exclude colummns: "+utils.GetSortOptions())
 	listCmd.Flags().BoolVarP(&showIdFlag, "id", "i", false, "Show the list IDs")
 }
 
-func printTaskList(taskList types.TodoTaskList, r *regexp.Regexp, sortMode table.SortMode) {
+func printTaskList(taskList types.TodoTaskList, columns []table.ColumnConfig, r *regexp.Regexp, sortMode table.SortMode) {
 	rows := table.Row{}
-	columns := []table.ColumnConfig{}
 
 	if showIdFlag {
-		rows = append(rows, "ID")
-		columns = append(columns, table.ColumnConfig{Name: "ID", Align: text.AlignLeft, Transformer: utils.Transformer})
+		columns = append([]table.ColumnConfig{{Name: "ID", Align: text.AlignLeft, Transformer: utils.Transformer}}, columns...)
 	}
 
-	rows = append(rows, "Name", "Owner", "Shared")
-	columns = append(columns, table.ColumnConfig{Name: "Name", Align: text.AlignLeft, Transformer: utils.Transformer},
-		table.ColumnConfig{Name: "Owner", Align: text.AlignCenter, Transformer: utils.Transformer},
-		table.ColumnConfig{Name: "Shared", Align: text.AlignCenter, Transformer: utils.Transformer},
-	)
+	for _, c := range columns {
+		rows = append(rows, c.Name)
+	}
 
 	t := utils.CreateFormattedTable(&rows, &columns)
 
@@ -101,7 +110,7 @@ func printTaskList(taskList types.TodoTaskList, r *regexp.Regexp, sortMode table
 				row = append(row, taskItem.Id)
 			}
 
-			row = append(row, taskItem.DisplayName, taskItem.IsOwner, taskItem.IsShared)
+			row = append(row, getAllowedTaskItemFields(taskItem, columns)...)
 			t.AppendRow(row)
 		}
 	}
@@ -113,4 +122,21 @@ func printTaskList(taskList types.TodoTaskList, r *regexp.Regexp, sortMode table
 	}
 
 	t.Render()
+}
+
+func getAllowedTaskItemFields(taskItem types.TodoTaskListItem, columns []table.ColumnConfig) table.Row {
+	fields := table.Row{}
+
+	for _, col := range columns {
+		switch col.Name {
+		case "Name":
+			fields = append(fields, taskItem.DisplayName)
+		case "Owner":
+			fields = append(fields, taskItem.IsOwner)
+		case "Shared":
+			fields = append(fields, taskItem.IsShared)
+		}
+	}
+
+	return fields
 }
