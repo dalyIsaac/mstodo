@@ -30,6 +30,7 @@ import (
 
 var (
 	filterFlag, sortFlag string
+	showIdFlag           bool
 )
 
 // listCmd represents the list command
@@ -43,7 +44,6 @@ var listCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
 
 		// Validate sort
 		sortMode, err := utils.GetSortMode(sortFlag)
@@ -73,32 +73,42 @@ var listCmd = &cobra.Command{
 func init() {
 	rootCmd.AddCommand(listCmd)
 	listCmd.Flags().StringVarP(&filterFlag, "filter", "f", ".", "Filter the lists which contain this regex")
-	listCmd.Flags().StringVarP(&sortFlag, "sort", "s", "none", "Sort by the name - choices: " + utils.GetSortOptions())
+	listCmd.Flags().StringVarP(&sortFlag, "sort", "s", "none", "Sort by the name - choices: "+utils.GetSortOptions())
+	listCmd.Flags().BoolVarP(&showIdFlag, "id", "i", false, "Show the list IDs")
 }
 
 func printTaskList(taskList types.TodoTaskList, r *regexp.Regexp, sortMode table.SortMode) {
-	t := utils.CreateFormattedTable(
-		&table.Row{"Name", "Owner", "Shared"},
-		&[]table.ColumnConfig{
-			{Name: "Name", Align: text.AlignLeft, Transformer: utils.Transformer},
-			{Name: "Owner", Align: text.AlignCenter, Transformer: utils.Transformer},
-			{Name: "Shared", Align: text.AlignCenter, Transformer: utils.Transformer},
-		},
+	rows := table.Row{}
+	columns := []table.ColumnConfig{}
+
+	if showIdFlag {
+		rows = append(rows, "ID")
+		columns = append(columns, table.ColumnConfig{Name: "ID", Align: text.AlignLeft, Transformer: utils.Transformer})
+	}
+
+	rows = append(rows, "Name", "Owner", "Shared")
+	columns = append(columns, table.ColumnConfig{Name: "Name", Align: text.AlignLeft, Transformer: utils.Transformer},
+		table.ColumnConfig{Name: "Owner", Align: text.AlignCenter, Transformer: utils.Transformer},
+		table.ColumnConfig{Name: "Shared", Align: text.AlignCenter, Transformer: utils.Transformer},
 	)
+
+	t := utils.CreateFormattedTable(&rows, &columns)
 
 	for _, taskItem := range taskList {
 		if r.MatchString(taskItem.DisplayName) {
-			t.AppendRow(table.Row{
-				taskItem.DisplayName,
-				taskItem.IsOwner,
-				taskItem.IsShared,
-			})
+			row := table.Row{}
+			if showIdFlag {
+				row = append(row, taskItem.Id)
+			}
+
+			row = append(row, taskItem.DisplayName, taskItem.IsOwner, taskItem.IsShared)
+			t.AppendRow(row)
 		}
 	}
 
 	if sortMode != utils.NoSort {
 		t.SortBy([]table.SortBy{
-			{Name:"Name", Mode: sortMode},
+			{Name: "Name", Mode: sortMode},
 		})
 	}
 
