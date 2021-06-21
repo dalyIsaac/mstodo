@@ -86,7 +86,7 @@ func init() {
 	rootCmd.AddCommand(listCmd)
 	listCmd.Flags().StringVarP(&filterFlag, "filter", "f", ".", "Filter the lists which contain this regex")
 	listCmd.Flags().StringVarP(&sortFlag, "sort", "s", "none", "Sort by the name - choices: "+utils.GetSortOptions())
-	listCmd.Flags().StringVarP(&excludeFlag, "exclude", "x", "", "Exclude colummns: "+utils.GetSortOptions())
+	listCmd.Flags().StringVarP(&excludeFlag, "exclude", "x", "", "Exclude columns: "+utils.GetSortOptions())
 	listCmd.Flags().BoolVarP(&showIdFlag, "id", "i", false, "Show the list IDs")
 }
 
