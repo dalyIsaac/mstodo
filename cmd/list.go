@@ -18,44 +18,125 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 package cmd
 
 import (
-	"fmt"
+	"regexp"
 
 	"github.com/dalyisaac/mstodo/api"
+	"github.com/dalyisaac/mstodo/types"
+	"github.com/dalyisaac/mstodo/utils"
+	"github.com/jedib0t/go-pretty/v6/table"
+	"github.com/jedib0t/go-pretty/v6/text"
 	"github.com/spf13/cobra"
 )
+
+var (
+	filterFlag, sortFlag, excludeFlag string
+	showIdFlag                        bool
+)
+
+var listColumns = []table.ColumnConfig{
+	{Name: "Name", Align: text.AlignLeft, Transformer: utils.Transformer},
+	{Name: "Owner", Align: text.AlignCenter, Transformer: utils.Transformer},
+	{Name: "Shared", Align: text.AlignCenter, Transformer: utils.Transformer},
+}
 
 // listCmd represents the list command
 var listCmd = &cobra.Command{
 	Use:   "list",
 	Short: "Get a list of the task lists",
 	Long:  `Get a list of the Microsoft To Do task lists`,
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
+		// Validate filter
+		r, err := regexp.Compile(filterFlag)
+		if err != nil {
+			return err
+		}
+
+		// Validate sort
+		sortMode, err := utils.GetSortMode(sortFlag)
+		if err != nil {
+			return err
+		}
+
+		// Construct excluded columns
+		cols, err := utils.GetAllowedColumns(excludeFlag, listColumns)
+		if err != nil {
+			return err
+		}
+
+		// Create request
 		req, err := api.CreateRequest()
 		if err != nil {
-			fmt.Println("error creating request:", err)
-			return
+			return err
 		}
 
-		resp, err := req.Get("/me/todo/lists")
+		// Get request
+		resp, err := req.SetResult(&types.TodoTaskListResponse{}).Get("/me/todo/lists")
 		if err != nil {
-			fmt.Println("Error getting lists:", err)
-			return
+			return err
 		}
 
-		fmt.Println("Result:", resp)
+		// Display results
+		result := resp.Result().(*types.TodoTaskListResponse)
+		printTaskList(result.Value, cols, r, sortMode)
+		return nil
 	},
 }
 
 func init() {
 	rootCmd.AddCommand(listCmd)
+	listCmd.Flags().StringVarP(&filterFlag, "filter", "f", ".", "Filter the lists which contain this regex")
+	listCmd.Flags().StringVarP(&sortFlag, "sort", "s", "none", "Sort by the name - choices: "+utils.GetSortOptions())
+	listCmd.Flags().StringVarP(&excludeFlag, "exclude", "x", "", "Exclude columns: "+utils.GetSortOptions())
+	listCmd.Flags().BoolVarP(&showIdFlag, "id", "i", false, "Show the list IDs")
+}
 
-	// Here you will define your flags and configuration settings.
+func printTaskList(taskList types.TodoTaskList, columns []table.ColumnConfig, r *regexp.Regexp, sortMode table.SortMode) {
+	rows := table.Row{}
 
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// listCmd.PersistentFlags().String("foo", "", "A help for foo")
+	if showIdFlag {
+		columns = append([]table.ColumnConfig{{Name: "ID", Align: text.AlignLeft, Transformer: utils.Transformer}}, columns...)
+	}
 
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// listCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	for _, c := range columns {
+		rows = append(rows, c.Name)
+	}
+
+	t := utils.CreateFormattedTable(&rows, &columns)
+
+	for _, taskItem := range taskList {
+		if r.MatchString(taskItem.DisplayName) {
+			row := table.Row{}
+			if showIdFlag {
+				row = append(row, taskItem.Id)
+			}
+
+			row = append(row, getAllowedTaskItemFields(taskItem, columns)...)
+			t.AppendRow(row)
+		}
+	}
+
+	if sortMode != utils.NoSort {
+		t.SortBy([]table.SortBy{
+			{Name: "Name", Mode: sortMode},
+		})
+	}
+
+	t.Render()
+}
+
+func getAllowedTaskItemFields(taskItem types.TodoTaskListItem, columns []table.ColumnConfig) table.Row {
+	fields := table.Row{}
+
+	for _, col := range columns {
+		switch col.Name {
+		case "Name":
+			fields = append(fields, taskItem.DisplayName)
+		case "Owner":
+			fields = append(fields, taskItem.IsOwner)
+		case "Shared":
+			fields = append(fields, taskItem.IsShared)
+		}
+	}
+
+	return fields
 }

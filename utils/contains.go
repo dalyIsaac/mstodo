@@ -15,11 +15,19 @@ You should have received a copy of the GNU General Public License
 along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-package auth
+package utils
 
-func getScopes() []string {
-	return []string{
-		"offline_access",
-		"Tasks.ReadWrite",
+import "strings"
+
+// Checks to see if the items array contains the target string.
+// During comparison, each item and the target are compared with lowercase.
+func ContainsString(items []string, target string) bool {
+	target = strings.ToLower(target)
+
+	for _, v := range items {
+		if strings.ToLower(v) == target {
+			return true
+		}
 	}
+	return false
 }

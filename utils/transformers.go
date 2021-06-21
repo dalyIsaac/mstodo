@@ -15,11 +15,25 @@ You should have received a copy of the GNU General Public License
 along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-package auth
+package utils
 
-func getScopes() []string {
-	return []string{
-		"offline_access",
-		"Tasks.ReadWrite",
+import "github.com/jedib0t/go-pretty/v6/text"
+
+func boolToEmoji(v bool) string {
+	if v {
+		return "✅"
 	}
+	return "❌"
 }
+
+// Cell data transformer for data based on their type
+var Transformer = text.Transformer(func(val interface{}) string {
+	switch val := val.(type) {
+	case bool:
+		return boolToEmoji(val)
+	case string:
+		return val
+	default:
+		return "unknown type"
+	}
+})
