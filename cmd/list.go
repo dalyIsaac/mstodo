@@ -18,7 +18,6 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 package cmd
 
 import (
-	"fmt"
 	"regexp"
 
 	"github.com/dalyisaac/mstodo/api"
@@ -30,7 +29,7 @@ import (
 )
 
 var (
-	filter string
+	filterFlag, sortFlag string
 )
 
 // listCmd represents the list command
@@ -38,46 +37,46 @@ var listCmd = &cobra.Command{
 	Use:   "list",
 	Short: "Get a list of the task lists",
 	Long:  `Get a list of the Microsoft To Do task lists`,
-	Run: func(cmd *cobra.Command, args []string) {
-		r, err := regexp.Compile(filter)
+	RunE: func(cmd *cobra.Command, args []string) error {
+		// Validate filter
+		r, err := regexp.Compile(filterFlag)
 		if err != nil {
-			fmt.Println("Error creating regex:", err)
-			return
+			return err
 		}
 
+
+		// Validate sort
+		sortMode, err := utils.GetSortMode(sortFlag)
+		if err != nil {
+			return err
+		}
+
+		// Create request
 		req, err := api.CreateRequest()
 		if err != nil {
-			fmt.Println("error creating request:", err)
-			return
+			return err
 		}
 
+		// Get request
 		resp, err := req.SetResult(&types.TodoTaskListResponse{}).Get("/me/todo/lists")
 		if err != nil {
-			fmt.Println("Error getting lists:", err)
-			return
+			return err
 		}
 
+		// Display results
 		result := resp.Result().(*types.TodoTaskListResponse)
-		printTaskList(result.Value, r)
+		printTaskList(result.Value, r, sortMode)
+		return nil
 	},
 }
 
 func init() {
 	rootCmd.AddCommand(listCmd)
-	listCmd.PersistentFlags().StringVarP(&filter, "filter", "f", ".", "Filter the lists which contain this regex")
-
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// listCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// listCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	listCmd.Flags().StringVarP(&filterFlag, "filter", "f", ".", "Filter the lists which contain this regex")
+	listCmd.Flags().StringVarP(&sortFlag, "sort", "s", "none", "Sort by the name - choices: " + utils.GetSortOptions())
 }
 
-func printTaskList(taskList types.TodoTaskList, r *regexp.Regexp) {
+func printTaskList(taskList types.TodoTaskList, r *regexp.Regexp, sortMode table.SortMode) {
 	t := utils.CreateFormattedTable(
 		&table.Row{"Name", "Owner", "Shared"},
 		&[]table.ColumnConfig{
@@ -95,6 +94,12 @@ func printTaskList(taskList types.TodoTaskList, r *regexp.Regexp) {
 				taskItem.IsShared,
 			})
 		}
+	}
+
+	if sortMode != utils.NoSort {
+		t.SortBy([]table.SortBy{
+			{Name:"Name", Mode: sortMode},
+		})
 	}
 
 	t.Render()
