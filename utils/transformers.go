@@ -17,7 +17,13 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 package utils
 
-import "github.com/jedib0t/go-pretty/v6/text"
+import (
+	"time"
+
+	"github.com/dalyisaac/mstodo/types"
+	"github.com/iancoleman/strcase"
+	"github.com/jedib0t/go-pretty/v6/text"
+)
 
 func boolToEmoji(v bool) string {
 	if v {
@@ -33,7 +39,23 @@ var Transformer = text.Transformer(func(val interface{}) string {
 		return boolToEmoji(val)
 	case string:
 		return val
+	case time.Time:
+		return types.ToRelativeTime(val)
+	case types.DateTimeTimeZone:
+		return val.String()
 	default:
 		return "unknown type"
 	}
+})
+
+var StatusTransformer = text.Transformer(func(val interface{}) string {
+	switch val := val.(type) {
+	case string:
+		val = strcase.ToDelimited(val, ' ')
+		if val == "completed" {
+			val = "✅"
+		}
+		return val
+	}
+	return "expected type string"
 })

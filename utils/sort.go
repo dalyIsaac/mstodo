@@ -82,3 +82,46 @@ func getSortMode(flag string, numericSort bool) (table.SortMode, error) {
 
 	return -1, errors.New("invalid sort option - valid options: " + options)
 }
+
+const sortByCutset = "[] "
+
+// GetSortByColumns parses the flags which indicate the columns to sort by
+func GetSortByColumns(s string, columns []table.ColumnConfig) ([]table.SortBy, error) {
+	sortBy := []table.SortBy{}
+
+	s = strings.Trim(s, sortByCutset)
+
+	// Get columns
+	cols := strings.Split(s, ",")
+
+	// Get sorted columns
+	for _, c := range cols {
+		c = strings.Trim(c, sortByCutset)
+
+		// Get parts
+		parts := strings.Split(c, ":")
+
+		if len(parts) == 0 {
+			continue
+		}
+
+		name := strings.Title(parts[0])
+		if !columnsContainName(columns, name) {
+			continue
+		}
+
+		sortMode := table.Asc
+
+		if len(parts) >= 2 {
+			specifiedMode, err := GetSortMode(parts[1])
+			if err != nil {
+				return nil, err
+			}
+			sortMode = specifiedMode
+		}
+
+		sortBy = append(sortBy, table.SortBy{Name: name, Mode: sortMode})
+	}
+
+	return sortBy, nil
+}

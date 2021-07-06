@@ -50,6 +50,7 @@ type todoTaskListListResponse struct {
 }
 
 func (l *TodoTaskListList) GetListId(name string) (string, error) {
+	name = strings.ToLower(name)
 	for _, item := range *l {
 		if strings.ToLower(item.DisplayName) == name {
 			return item.Id, nil
