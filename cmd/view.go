@@ -40,7 +40,7 @@ type viewParams struct {
 func createViewCmd() *cobra.Command {
 	var (
 		filterFlag, sortFlag, excludeFlag string
-		showIdFlag                        bool
+		absoluteTime, showIdFlag          bool
 	)
 
 	// viewCmd represents the view command
@@ -53,7 +53,7 @@ func createViewCmd() *cobra.Command {
 				return errors.New("missing list name")
 			}
 
-			params, err := getViewCmdParams(filterFlag, sortFlag, excludeFlag, showIdFlag)
+			params, err := getViewCmdParams(filterFlag, sortFlag, excludeFlag, absoluteTime, showIdFlag)
 			if err != nil {
 				return err
 			}
@@ -92,24 +92,30 @@ func createViewCmd() *cobra.Command {
 	viewCmd.Flags().StringVarP(&filterFlag, "filter", "f", ".", "Filter the tasks which contain this regex")
 	viewCmd.Flags().StringVarP(&sortFlag, "sort", "s", "none", "Sort by the fields, for example: --sort=[title:dsc,created:asc,status]")
 	viewCmd.Flags().StringVarP(&excludeFlag, "exclude", "x", "", "Exclude columns")
+	viewCmd.Flags().BoolVarP(&absoluteTime, "absolute", "a", false, "Show absolute datetime")
 	viewCmd.Flags().BoolVarP(&showIdFlag, "id", "i", false, "Show the task IDs")
 
 	return viewCmd
 }
 
-var viewCmdCols = []table.ColumnConfig{
-	utils.LeftColumn("Id"),
-	utils.LeftColumn("Title"),
-	utils.CenterColumn("Importance"),
-	utils.CenterColumnTransformer("Status", utils.StatusTransformer),
-	utils.CenterColumn("Reminder"),
-	utils.CenterColumn("Due Date"),
-	utils.CenterColumn("Completed"),
-	utils.CenterColumn("Created"),
-	utils.CenterColumn("Last Modified"),
-}
+func getViewCmdParams(filterFlag, sortFlag, excludeFlag string, absoluteTime, showIdFlag bool) (*viewParams, error) {
+	timeTransformer := utils.Transformer
+	if absoluteTime {
+		timeTransformer = utils.AbsoluteTimeTransformer
+	}
 
-func getViewCmdParams(filterFlag, sortFlag, excludeFlag string, showIdFlag bool) (*viewParams, error) {
+	var viewCmdCols = []table.ColumnConfig{
+		utils.LeftColumn("Id"),
+		utils.LeftColumn("Title"),
+		utils.CenterColumn("Importance"),
+		utils.CenterColumnTransformer("Status", utils.StatusTransformer),
+		utils.CenterColumnTransformer("Reminder", timeTransformer),
+		utils.CenterColumnTransformer("Due Date", timeTransformer),
+		utils.CenterColumnTransformer("Completed", timeTransformer),
+		utils.CenterColumnTransformer("Created", timeTransformer),
+		utils.CenterColumnTransformer("Last Modified", timeTransformer),
+	}
+
 	// Validate filter
 	r, err := regexp.Compile(filterFlag)
 	if err != nil {

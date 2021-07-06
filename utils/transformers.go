@@ -42,13 +42,11 @@ var Transformer = text.Transformer(func(val interface{}) string {
 		return val
 	case time.Time:
 		return humanize.Time(val)
-	case api.DateTimeTimeZone:
-		return val.String()
-	case *api.DateTimeTimeZone:
+	case *api.GraphTime:
 		if val == nil {
 			return ""
 		}
-		return val.String()
+		return humanize.Time(time.Time(*val))
 	default:
 		return "unknown type"
 	}
@@ -64,4 +62,18 @@ var StatusTransformer = text.Transformer(func(val interface{}) string {
 		return val
 	}
 	return "expected type string"
+})
+
+var AbsoluteTimeTransformer = text.Transformer(func(val interface{}) string {
+	switch val := val.(type) {
+	case time.Time:
+		return val.Format(time.RFC1123)
+	case *api.GraphTime:
+		if val == nil {
+			return ""
+		}
+		return time.Time(*val).Format(time.RFC1123)
+	default:
+		return "unknown type"
+	}
 })

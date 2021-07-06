@@ -18,6 +18,7 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 package api
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -27,38 +28,57 @@ import (
 
 // Custom time unmarshalling
 
-type msgraphTime time.Time
+type dateTimeTimeZoneTime time.Time
 
 const msgraphTimeLayout = "2006-01-02T15:04:05.0000000"
 
 // UnmarshalJSON parses the json string into the Microsoft Graph time format,
 // as per https://docs.microsoft.com/en-us/graph/api/resources/datetimetimezone?view=graph-rest-1.0
-func (ct *msgraphTime) UnmarshalJSON(b []byte) (err error) {
+func (ct *dateTimeTimeZoneTime) UnmarshalJSON(b []byte) (err error) {
 	s := strings.Trim(string(b), `"`)
 	nt, err := time.Parse(msgraphTimeLayout, s)
-	*ct = msgraphTime(nt)
+	*ct = dateTimeTimeZoneTime(nt)
 	return err
 }
 
 // Custom location time unmarshalling
 
-type msgraphLocation time.Location
+type dateTimeTimeZoneLocation time.Location
 
-func (ct *msgraphLocation) UnmarshalJSON(b []byte) (err error) {
+func (ct *dateTimeTimeZoneLocation) UnmarshalJSON(b []byte) (err error) {
 	s := strings.Trim(string(b), `"`)
 	loc, err := time.LoadLocation(s)
-	*ct = msgraphLocation(*loc)
+	*ct = dateTimeTimeZoneLocation(*loc)
 	return err
 }
 
 // DateTimeTimeZone based on https://docs.microsoft.com/en-us/graph/api/resources/datetimetimezone?view=graph-rest-1.0
-type DateTimeTimeZone struct {
-	DateTime msgraphTime     `json:"dateTime"`
-	TimeZone msgraphLocation `json:"timeZone"`
+type dateTimeTimeZone struct {
+	DateTime dateTimeTimeZoneTime     `json:"dateTime"`
+	TimeZone dateTimeTimeZoneLocation `json:"timeZone"`
 }
 
-func (dt *DateTimeTimeZone) String() string {
+func (dt *dateTimeTimeZone) String() string {
 	t := time.Time(dt.DateTime)
 	l := time.Location(dt.TimeZone)
 	return fmt.Sprintf("%v (%v)", humanize.Time(t), l.String())
+}
+
+// GraphTime
+type GraphTime time.Time
+
+func (t *GraphTime) UnmarshalJSON(b []byte) (err error) {
+	var dt dateTimeTimeZone
+	if err := json.Unmarshal(b, &dt); err != nil {
+		return err
+	}
+
+	date := time.Time(dt.DateTime)
+	year, month, day := date.Date()
+	hour, min, sec := date.Clock()
+	nsec := date.Nanosecond()
+	loc := time.Location(dt.TimeZone)
+
+	*t = GraphTime(time.Date(year, month, day, hour, min, sec, nsec, &loc))
+	return nil
 }
