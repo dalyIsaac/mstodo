@@ -23,7 +23,6 @@ import (
 	"github.com/dalyisaac/mstodo/api"
 	"github.com/dalyisaac/mstodo/utils"
 	"github.com/jedib0t/go-pretty/v6/table"
-	"github.com/jedib0t/go-pretty/v6/text"
 	"github.com/spf13/cobra"
 )
 
@@ -75,10 +74,10 @@ func createListsCmd() *cobra.Command {
 }
 
 var listsCmdCols = []table.ColumnConfig{
-	{Name: "ID", Align: text.AlignLeft, Transformer: utils.Transformer},
-	{Name: "Name", Align: text.AlignLeft, Transformer: utils.Transformer},
-	{Name: "Owner", Align: text.AlignCenter, Transformer: utils.Transformer},
-	{Name: "Shared", Align: text.AlignCenter, Transformer: utils.Transformer},
+	utils.LeftColumn("ID"),
+	utils.LeftColumn("Name"),
+	utils.CenterColumn("Owner"),
+	utils.CenterColumn("Shared"),
 }
 
 func getListsCmdParams(filterFlag, sortFlag, excludeFlag string, showIdFlag bool) (*listsParams, error) {

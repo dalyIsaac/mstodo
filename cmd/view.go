@@ -24,12 +24,10 @@ import (
 	"github.com/dalyisaac/mstodo/api"
 	"github.com/dalyisaac/mstodo/utils"
 	"github.com/jedib0t/go-pretty/v6/table"
-	"github.com/jedib0t/go-pretty/v6/text"
 	"github.com/spf13/cobra"
 )
 
 func init() {
-
 	rootCmd.AddCommand(createViewCmd())
 }
 
@@ -100,15 +98,15 @@ func createViewCmd() *cobra.Command {
 }
 
 var viewCmdCols = []table.ColumnConfig{
-	{Name: "Id", Align: text.AlignLeft, Transformer: utils.Transformer},
-	{Name: "Title", Align: text.AlignLeft, Transformer: utils.Transformer},
-	{Name: "Importance", Align: text.AlignCenter, Transformer: utils.Transformer},
-	{Name: "Status", Align: text.AlignCenter, Transformer: utils.StatusTransformer},
-	{Name: "Reminder", Align: text.AlignCenter, Transformer: utils.Transformer},
-	{Name: "Due Date", Align: text.AlignCenter, Transformer: utils.Transformer},
-	{Name: "Completed", Align: text.AlignCenter, Transformer: utils.Transformer},
-	{Name: "Created", Align: text.AlignCenter, Transformer: utils.Transformer},
-	{Name: "Last Modified", Align: text.AlignCenter, Transformer: utils.Transformer},
+	utils.LeftColumn("Id"),
+	utils.LeftColumn("Title"),
+	utils.CenterColumn("Importance"),
+	utils.CenterColumnTransformer("Status", utils.StatusTransformer),
+	utils.CenterColumn("Reminder"),
+	utils.CenterColumn("Due Date"),
+	utils.CenterColumn("Completed"),
+	utils.CenterColumn("Created"),
+	utils.CenterColumn("Last Modified"),
 }
 
 func getViewCmdParams(filterFlag, sortFlag, excludeFlag string, showIdFlag bool) (*viewParams, error) {
