@@ -20,7 +20,7 @@ package utils
 import (
 	"time"
 
-	"github.com/dalyisaac/mstodo/types"
+	"github.com/dalyisaac/mstodo/api"
 	"github.com/iancoleman/strcase"
 	"github.com/jedib0t/go-pretty/v6/text"
 )
@@ -40,8 +40,8 @@ var Transformer = text.Transformer(func(val interface{}) string {
 	case string:
 		return val
 	case time.Time:
-		return types.ToRelativeTime(val)
-	case types.DateTimeTimeZone:
+		return api.ToRelativeTime(val)
+	case api.DateTimeTimeZone:
 		return val.String()
 	default:
 		return "unknown type"
