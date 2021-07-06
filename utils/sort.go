@@ -83,7 +83,7 @@ func getSortMode(flag string, numericSort bool) (table.SortMode, error) {
 	return -1, errors.New("invalid sort option - valid options: " + options)
 }
 
-const sortByCutset = "[] "
+const sortByCutset = "[] \"'"
 
 // GetSortByColumns parses the flags which indicate the columns to sort by
 func GetSortByColumns(s string, columns []table.ColumnConfig) ([]table.SortBy, error) {

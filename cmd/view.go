@@ -90,7 +90,7 @@ func createViewCmd() *cobra.Command {
 	}
 
 	viewCmd.Flags().StringVarP(&filterFlag, "filter", "f", ".", "Filter the tasks which contain this regex")
-	viewCmd.Flags().StringVarP(&sortFlag, "sort", "s", "none", "Sort by the fields, for example: --sort=[title:dsc,created:asc,status]")
+	viewCmd.Flags().StringVarP(&sortFlag, "sort", "s", "none", "Sort by the fields, for example: --sort=\"[title:dsc,created:asc,status]\"")
 	viewCmd.Flags().StringVarP(&excludeFlag, "exclude", "x", "", "Exclude columns")
 	viewCmd.Flags().BoolVarP(&absoluteTime, "absolute", "a", false, "Show absolute datetime")
 	viewCmd.Flags().BoolVarP(&showIdFlag, "id", "i", false, "Show the task IDs")
