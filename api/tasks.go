@@ -23,16 +23,16 @@ import (
 )
 
 type TodoTask struct {
-	Id                   string           `json:"id"`
-	Title                string           `json:"title"`
-	Importance           string           `json:"importance"`
-	IsReminderOn         bool             `json:"isReminderOn"`
-	Status               string           `json:"status"`
-	ReminderDateTime     DateTimeTimeZone `json:"reminderDateTime"`
-	DueDateTime          DateTimeTimeZone `json:"dueDateTime"`
-	Completed            DateTimeTimeZone `json:"completedDateTime"`
-	CreatedDateTime      time.Time        `json:"createdDateTime"`
-	LastModifiedDateTime time.Time        `json:"lastModifiedDateTime"`
+	Id                   string            `json:"id"`
+	Title                string            `json:"title"`
+	Importance           string            `json:"importance"`
+	IsReminderOn         bool              `json:"isReminderOn"`
+	Status               string            `json:"status"`
+	ReminderDateTime     *DateTimeTimeZone `json:"reminderDateTime"`
+	DueDateTime          *DateTimeTimeZone `json:"dueDateTime"`
+	Completed            *DateTimeTimeZone `json:"completedDateTime"`
+	CreatedDateTime      time.Time         `json:"createdDateTime"`
+	LastModifiedDateTime time.Time         `json:"lastModifiedDateTime"`
 }
 
 type TodoTaskList []TodoTask

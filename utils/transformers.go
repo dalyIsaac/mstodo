@@ -43,6 +43,11 @@ var Transformer = text.Transformer(func(val interface{}) string {
 		return api.ToRelativeTime(val)
 	case api.DateTimeTimeZone:
 		return val.String()
+	case *api.DateTimeTimeZone:
+		if val == nil {
+			return ""
+		}
+		return val.String()
 	default:
 		return "unknown type"
 	}

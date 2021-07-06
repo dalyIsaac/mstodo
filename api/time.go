@@ -60,7 +60,7 @@ type DateTimeTimeZone struct {
 func (dt *DateTimeTimeZone) String() string {
 	t := time.Time(dt.DateTime)
 	l := time.Location(dt.TimeZone)
-	return fmt.Sprintf("%v (%v)", ToRelativeTime(t), l)
+	return fmt.Sprintf("%v (%v)", ToRelativeTime(t), l.String())
 }
 
 func ToRelativeTime(val time.Time) string {
