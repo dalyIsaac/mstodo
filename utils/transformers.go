@@ -21,6 +21,7 @@ import (
 	"time"
 
 	"github.com/dalyisaac/mstodo/api"
+	"github.com/dustin/go-humanize"
 	"github.com/iancoleman/strcase"
 	"github.com/jedib0t/go-pretty/v6/text"
 )
@@ -40,7 +41,7 @@ var Transformer = text.Transformer(func(val interface{}) string {
 	case string:
 		return val
 	case time.Time:
-		return api.ToRelativeTime(val)
+		return humanize.Time(val)
 	case api.DateTimeTimeZone:
 		return val.String()
 	case *api.DateTimeTimeZone:
