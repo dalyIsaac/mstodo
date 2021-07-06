@@ -15,7 +15,12 @@ You should have received a copy of the GNU General Public License
 along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-package types
+package api
+
+import (
+	"errors"
+	"strings"
+)
 
 type TodoTaskListItem struct {
 	// The name of the task list.
@@ -37,8 +42,36 @@ type TodoTaskListItem struct {
 	WellknownListName string `json:"wellknownListName"`
 }
 
-type TodoTaskList []TodoTaskListItem
+// List of TodoTaskList items
+type TodoTaskListList []TodoTaskListItem
 
-type TodoTaskListResponse struct {
-	Value TodoTaskList `json:"value"`
+type todoTaskListListResponse struct {
+	Value TodoTaskListList `json:"value"`
+}
+
+func (l *TodoTaskListList) GetListId(name string) (string, error) {
+	for _, item := range *l {
+		if strings.ToLower(item.DisplayName) == name {
+			return item.Id, nil
+		}
+	}
+
+	return "", errors.New("could not find name '" + name + "'")
+}
+
+func GetLists() (*TodoTaskListList, error) {
+	// Create request
+	req, err := CreateRequest()
+	if err != nil {
+		return nil, err
+	}
+
+	// Get request
+	resp, err := req.SetResult(&todoTaskListListResponse{}).Get("/me/todo/lists")
+	if err != nil {
+		return nil, err
+	}
+
+	lists := resp.Result().(*todoTaskListListResponse).Value
+	return &lists, nil
 }

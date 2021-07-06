@@ -38,7 +38,7 @@ func GetAllowedColumns(colStr string, columnConfigs []table.ColumnConfig) ([]tab
 	excluded := []string{}
 	for _, s := range strings.Split(colStr, ",") {
 		s = strings.Trim(s, ignoredColChars)
-		if !columnsContainName(columnConfigs, s) {
+		if s != "" && !columnsContainName(columnConfigs, s) {
 			return allowed, fmt.Errorf("column '%s' is not a valid column to exclude", s)
 		}
 		excluded = append(excluded, s)
