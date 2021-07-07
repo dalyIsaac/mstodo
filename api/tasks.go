@@ -20,6 +20,8 @@ package api
 import (
 	"fmt"
 	"time"
+
+	"github.com/dalyisaac/mstodo/datetime"
 )
 
 type TodoTask struct {
@@ -28,9 +30,9 @@ type TodoTask struct {
 	Importance           string     `json:"importance"`
 	IsReminderOn         bool       `json:"isReminderOn"`
 	Status               string     `json:"status"`
-	ReminderDateTime     *GraphTime `json:"reminderDateTime"`
-	DueDateTime          *GraphTime `json:"dueDateTime"`
-	Completed            *GraphTime `json:"completedDateTime"`
+	ReminderDateTime     *datetime.GraphTime `json:"reminderDateTime"`
+	DueDateTime          *datetime.GraphTime `json:"dueDateTime"`
+	Completed            *datetime.GraphTime `json:"completedDateTime"`
 	CreatedDateTime      time.Time  `json:"createdDateTime"`
 	LastModifiedDateTime time.Time  `json:"lastModifiedDateTime"`
 }
