@@ -20,8 +20,10 @@ package cmd
 import (
 	"errors"
 	"regexp"
+	"time"
 
 	"github.com/dalyisaac/mstodo/api"
+	"github.com/dalyisaac/mstodo/datetime"
 	"github.com/dalyisaac/mstodo/utils"
 	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/spf13/cobra"
@@ -31,29 +33,45 @@ func init() {
 	rootCmd.AddCommand(createViewCmd())
 }
 
-type viewParams struct {
-	columns []table.ColumnConfig
-	filter  *regexp.Regexp
-	sort    []table.SortBy
+type viewParamsFlags struct {
+	// filter flags
+	title, status, reminder, dueDate, completed, created, lastModified string
+	sort, exclude                                                      string
+	absoluteTime, showId                                               bool
 }
 
+type viewParams struct {
+	columns            []table.ColumnConfig
+	sort               []table.SortBy
+	titleFilter        *regexp.Regexp
+	statusFilter       *regexp.Regexp
+	reminderFilter     *datetime.DateFilters
+	dueDateFilter      *datetime.DateFilters
+	completedFilter    *datetime.DateFilters
+	createdFilter      *datetime.DateFilters
+	lastModifiedFilter *datetime.DateFilters
+}
+
+const matchAll = "."
+
 func createViewCmd() *cobra.Command {
-	var (
-		filterFlag, sortFlag, excludeFlag string
-		absoluteTime, showIdFlag          bool
-	)
+	flags := viewParamsFlags{}
 
 	// viewCmd represents the view command
 	var viewCmd = &cobra.Command{
 		Use:   "view <list name>",
 		Short: "View a specific list",
-		Long:  `View a specific task list`,
+		Long: `View a specific task list.
+
+Dates can be filtered using by specifying the start and/or end date you're interested in. For example:
+
+--reminder="start Monday; end fri"`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if len(args) < 1 {
 				return errors.New("missing list name")
 			}
 
-			params, err := getViewCmdParams(filterFlag, sortFlag, excludeFlag, absoluteTime, showIdFlag)
+			params, err := getViewCmdParams(flags)
 			if err != nil {
 				return err
 			}
@@ -83,26 +101,38 @@ func createViewCmd() *cobra.Command {
 			}
 
 			// Display results
-			printTaskList(*tasks, params)
+			params.printTaskList(*tasks)
 
 			return nil
 		},
 	}
 
-	viewCmd.Flags().StringVarP(&filterFlag, "filter", "f", ".", "Filter the tasks which contain this regex")
-	viewCmd.Flags().StringVarP(&sortFlag, "sort", "s", "none", "Sort by the fields, for example: --sort=\"[title:dsc,created:asc,status]\"")
-	viewCmd.Flags().StringVarP(&excludeFlag, "exclude", "x", "", "Exclude columns")
-	viewCmd.Flags().BoolVarP(&absoluteTime, "absolute", "a", false, "Show absolute datetime")
-	viewCmd.Flags().BoolVarP(&showIdFlag, "id", "i", false, "Show the task IDs")
+	viewCmd.Flags().StringVarP(&flags.title, "title", "l", matchAll, "Filter the task names which contain this regex")
+	viewCmd.Flags().StringVarP(&flags.status, "status", "u", matchAll, "Filter the status (use 'completed' for ✅)")
+	viewCmd.Flags().StringVarP(&flags.reminder, "reminder", "r", matchAll, "Filter by reminder using the date syntax")
+	viewCmd.Flags().StringVarP(&flags.dueDate, "due", "d", matchAll, "Filter by due using the date syntax")
+	viewCmd.Flags().StringVarP(&flags.completed, "completed", "o", matchAll, "Filter by completed using the date syntax")
+	viewCmd.Flags().StringVarP(&flags.created, "created", "c", matchAll, "Filter by created using the date syntax")
+	viewCmd.Flags().StringVarP(&flags.lastModified, "last-modified", "m", matchAll, "Filter by last-modified using the date syntax")
+
+	viewCmd.Flags().StringVarP(&flags.sort, "sort", "s", "none", "Sort by the fields, for example: --sort=\"[title:dsc,created:asc,status]\"")
+	viewCmd.Flags().StringVarP(&flags.exclude, "exclude", "x", "", "Exclude columns")
+	viewCmd.Flags().BoolVarP(&flags.absoluteTime, "absolute", "a", false, "Show absolute datetime")
+	viewCmd.Flags().BoolVarP(&flags.showId, "id", "i", false, "Show the task IDs")
 
 	return viewCmd
 }
 
-func getViewCmdParams(filterFlag, sortFlag, excludeFlag string, absoluteTime, showIdFlag bool) (*viewParams, error) {
+func getViewCmdParams(flags viewParamsFlags) (*viewParams, error) {
+	params := viewParams{}
+
 	timeTransformer := utils.Transformer
-	if absoluteTime {
+	if flags.absoluteTime {
 		timeTransformer = utils.AbsoluteTimeTransformer
 	}
+
+	// Validate filter
+	getFilters(&params, flags)
 
 	var viewCmdCols = []table.ColumnConfig{
 		utils.LeftColumn("Id"),
@@ -116,37 +146,88 @@ func getViewCmdParams(filterFlag, sortFlag, excludeFlag string, absoluteTime, sh
 		utils.CenterColumnTransformer("Last Modified", timeTransformer),
 	}
 
-	// Validate filter
-	r, err := regexp.Compile(filterFlag)
-	if err != nil {
-		return nil, err
-	}
-
 	// Get sort
-	sortBy, err := utils.GetSortByColumns(sortFlag, viewCmdCols)
+	sortBy, err := utils.GetSortByColumns(flags.sort, viewCmdCols)
 	if err != nil {
 		return nil, err
 	}
+	params.sort = sortBy
 
 	// Show ID flag
-	if !showIdFlag {
-		excludeFlag = "ID," + excludeFlag
+	if !flags.showId {
+		flags.exclude = "ID," + flags.exclude
 	}
 
 	// Construct excluded columns
-	cols, err := utils.GetAllowedColumns(excludeFlag, viewCmdCols)
+	cols, err := utils.GetAllowedColumns(flags.exclude, viewCmdCols)
 	if err != nil {
 		return nil, err
 	}
+	params.columns = cols
 
-	return &viewParams{
-		columns: cols,
-		filter:  r,
-		sort:    sortBy,
-	}, nil
+	return &params, nil
 }
 
-func printTaskList(taskList api.TodoTaskList, params *viewParams) {
+type createDateFilter struct {
+	filter **datetime.DateFilters
+	flag   string
+}
+
+func getFilters(params *viewParams, flags viewParamsFlags) error {
+	if flags.title != matchAll {
+		if err := setStringFilter(&params.titleFilter, flags.title); err != nil {
+			return err
+		}
+	}
+
+	if flags.status != matchAll {
+		if err := setStringFilter(&params.statusFilter, flags.status); err != nil {
+			return err
+		}
+	}
+
+	filters := []createDateFilter{
+		{filter: &params.reminderFilter, flag: flags.reminder},
+		{filter: &params.dueDateFilter, flag: flags.dueDate},
+		{filter: &params.completedFilter, flag: flags.completed},
+		{filter: &params.createdFilter, flag: flags.created},
+		{filter: &params.lastModifiedFilter, flag: flags.lastModified},
+	}
+
+	for _, f := range filters {
+		if f.flag == matchAll {
+			continue
+		}
+
+		if err := setDateFilter(f.filter, f.flag); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func setStringFilter(filter **regexp.Regexp, flag string) error {
+	r, err := regexp.Compile(flag)
+	if err != nil {
+		return err
+	}
+
+	*filter = r
+	return nil
+}
+
+func setDateFilter(filter **datetime.DateFilters, flag string) error {
+	res, err := datetime.Parser(flag)
+	if err != nil {
+		return err
+	}
+
+	*filter = res
+	return nil
+}
+
+func (params *viewParams) printTaskList(taskList api.TodoTaskList) {
 	headerRow := table.Row{}
 	columns := params.columns
 
@@ -158,7 +239,7 @@ func printTaskList(taskList api.TodoTaskList, params *viewParams) {
 	t := utils.CreateFormattedTable(&headerRow, &columns)
 
 	for _, todoTask := range taskList {
-		if params.filter.MatchString(todoTask.Title) {
+		if params.canAdd(todoTask) {
 			row := table.Row{}
 			row = append(row, getAllowedTodoTaskFields(todoTask, columns)...)
 			t.AppendRow(row)
@@ -170,6 +251,45 @@ func printTaskList(taskList api.TodoTaskList, params *viewParams) {
 	}
 
 	t.Render()
+}
+
+type viewCanAddRegexp struct {
+	filter *regexp.Regexp
+	field  *string
+}
+
+type viewCanAddDate struct {
+	filter *datetime.DateFilters
+	field  *datetime.GraphTime
+}
+
+func (params *viewParams) canAdd(task api.TodoTask) bool {
+	checkStrings := []viewCanAddRegexp{
+		{filter: params.titleFilter, field: &task.Title},
+		{filter: params.statusFilter, field: &task.Status},
+	}
+
+	for _, f := range checkStrings {
+		if f.filter != nil && !f.filter.MatchString(*f.field) {
+			return false
+		}
+	}
+
+	checkDates := []viewCanAddDate{
+		{filter: params.reminderFilter, field: task.ReminderDateTime},
+		{filter: params.dueDateFilter, field: task.DueDateTime},
+		{filter: params.completedFilter, field: task.Completed},
+		{filter: params.createdFilter, field: graphtime(task.CreatedDateTime)},
+		{filter: params.lastModifiedFilter, field: graphtime(task.LastModifiedDateTime)},
+	}
+
+	for _, f := range checkDates {
+		if !f.filter.Contains(f.field) {
+			return false
+		}
+	}
+
+	return true
 }
 
 func getAllowedTodoTaskFields(todoTask api.TodoTask, columns []table.ColumnConfig) table.Row {
@@ -199,4 +319,10 @@ func getAllowedTodoTaskFields(todoTask api.TodoTask, columns []table.ColumnConfi
 	}
 
 	return fields
+}
+
+// graphtime converts `time.Time` to a `datetime.GraphTime` pointer
+func graphtime(t time.Time) *datetime.GraphTime {
+	g := datetime.GraphTime(t)
+	return &g
 }

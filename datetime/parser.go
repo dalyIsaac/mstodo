@@ -32,12 +32,7 @@ var Parser = (&parserWrapper{now: func() time.Time {
 	return time.Date(n.Year(), n.Month(), n.Day(), 0, 0, 0, 0, time.UTC)
 }}).parser
 
-const parserCutset = " "
-
-type DateFilters struct {
-	Start *time.Time
-	End   *time.Time
-}
+const parserCutset = "[] '\""
 
 func (parser *parserWrapper) parser(input string) (*DateFilters, error) {
 	parts := strings.Split(input, ";")
