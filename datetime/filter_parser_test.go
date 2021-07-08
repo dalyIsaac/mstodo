@@ -53,13 +53,15 @@ func Test_parserWrapper_parser(t *testing.T) {
 		{name: "only end", fields: testFields, wantErr: false, args: args{input: "end Friday"}, want: filterP(DateFilters{End: p(date(9, 7))})},
 		{name: "no qualifier", fields: testFields, wantErr: true, args: args{input: "monday"}, want: nil},
 		{name: "force error", fields: testFields, wantErr: true, args: args{input: "start garbage"}, want: nil},
+		{name: "too many parts", fields: testFields, wantErr: true, args: args{"a;b;c"}, want: nil},
+		{name: "empty filter", fields: testFields, wantErr: true, args: args{"a;b;c"}, want: nil},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			parser := &parserWrapper{
 				now: tt.fields.now,
 			}
-			got, err := parser.parser(tt.args.input)
+			got, err := parser.filterParser(tt.args.input)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("parserWrapper.parser() error = %v, wantErr %v", err, tt.wantErr)
 				return

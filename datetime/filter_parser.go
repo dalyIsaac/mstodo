@@ -23,18 +23,14 @@ import (
 	"time"
 )
 
-type parserWrapper struct {
-	now func() time.Time
-}
-
-var Parser = (&parserWrapper{now: func() time.Time {
+var FilterParser = (&parserWrapper{now: func() time.Time {
 	n := time.Now()
 	return time.Date(n.Year(), n.Month(), n.Day(), 0, 0, 0, 0, time.UTC)
-}}).parser
+}}).filterParser
 
 const parserCutset = "[] '\""
 
-func (parser *parserWrapper) parser(input string) (*DateFilters, error) {
+func (parser *parserWrapper) filterParser(input string) (*DateFilters, error) {
 	parts := strings.Split(input, ";")
 	filters := DateFilters{}
 
