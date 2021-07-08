@@ -29,7 +29,7 @@ type TodoTask struct {
 	Title                string              `json:"title"`
 	Importance           string              `json:"importance"`
 	IsReminderOn         bool                `json:"isReminderOn"`
-	Status               string              `json:"status"`
+	Status               GraphStatus         `json:"status"`
 	ReminderDateTime     *datetime.GraphTime `json:"reminderDateTime"`
 	DueDateTime          *datetime.GraphTime `json:"dueDateTime"`
 	Completed            *datetime.GraphTime `json:"completedDateTime"`

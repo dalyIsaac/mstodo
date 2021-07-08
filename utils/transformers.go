@@ -20,9 +20,9 @@ package utils
 import (
 	"time"
 
+	"github.com/dalyisaac/mstodo/api"
 	"github.com/dalyisaac/mstodo/datetime"
 	"github.com/dustin/go-humanize"
-	"github.com/iancoleman/strcase"
 	"github.com/jedib0t/go-pretty/v6/text"
 )
 
@@ -54,12 +54,11 @@ var Transformer = text.Transformer(func(val interface{}) string {
 
 var StatusTransformer = text.Transformer(func(val interface{}) string {
 	switch val := val.(type) {
-	case string:
-		val = strcase.ToDelimited(val, ' ')
+	case api.GraphStatus:
 		if val == "completed" {
 			val = "✅"
 		}
-		return val
+		return string(val)
 	}
 	return "expected type string"
 })
