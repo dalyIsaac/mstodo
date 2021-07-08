@@ -56,10 +56,10 @@ func (parser *parserWrapper) parser(input string) (*DateFilters, error) {
 	for _, p := range parts {
 		p = strings.Trim(strings.ToLower(p), parserCutset)
 
-		if strings.Contains(p, "start") {
-			start, err = parser.parseDate(p)
-		} else if strings.Contains(p, "end") {
-			end, err = parser.parseDate(p)
+		if idx := contains(p, "start"); idx != -1 {
+			start, err = parser.parseDate(p, idx)
+		} else if idx := contains(p, "end"); idx != -1 {
+			end, err = parser.parseDate(p, idx)
 		} else {
 			return nil, errors.New("missing qualifier")
 		}
@@ -72,12 +72,27 @@ func (parser *parserWrapper) parser(input string) (*DateFilters, error) {
 	filters.Start = start
 	filters.End = end
 	return &filters, nil
+}
 
+func contains(s string, substring string) int {
+	l := len(substring)
+	if len(s) < l {
+		return -1
+	}
+
+	if s[:l] == substring {
+		return l
+	}
+	return -1
 }
 
 var dateLayouts = []string{
 	"02/Jan/2006",
 	"02/JAN/2006",
+	"02-Jan-2006",
+	"02-JAN-2006",
+	"02-Jan-06",
+	"02-JAN-06",
 	"2/Jan/2006",
 	"2/JAN/2006",
 	"02/01/2006",
@@ -91,14 +106,16 @@ var dateLayouts = []string{
 	"January 02, 2006",
 }
 
-func (parser *parserWrapper) parseDate(input string) (*time.Time, error) {
+func (parser *parserWrapper) parseDate(input string, startIdx int) (*time.Time, error) {
+	input = input[startIdx:]
+
 	for _, layout := range dateLayouts {
-		if date, err := time.Parse(layout, input); err != nil {
+		if date, err := time.Parse(layout, input); err == nil {
 			return parser.fixYear(date), nil
 		}
 	}
 
-	if date, err := parser.parseDay(input); err != nil {
+	if date, err := parser.parseDay(input); err == nil {
 		return date, nil
 	}
 
@@ -107,7 +124,7 @@ func (parser *parserWrapper) parseDate(input string) (*time.Time, error) {
 
 func (parser *parserWrapper) fixYear(date time.Time) *time.Time {
 	if date.Year() == 0 {
-		date.AddDate(parser.now().Year(), 0, 0)
+		date = date.AddDate(parser.now().Year(), 0, 0)
 	}
 	return &date
 }
@@ -128,9 +145,10 @@ func (parser *parserWrapper) parseDay(input string) (*time.Time, error) {
 
 	// Get adjective
 	relative := none
-	start := 4
+	start := 0
 
 	if len(input) >= 8 {
+		start = 4
 		// last, this, next
 		switch input[:4] {
 		case "last":
@@ -145,10 +163,6 @@ func (parser *parserWrapper) parseDay(input string) (*time.Time, error) {
 	}
 
 	// Get day of week
-	if start >= len(input) {
-		return nil, errors.New("invalid date")
-	}
-
 	day, err := parser.getDayPart(input, start)
 	if err != nil {
 		return nil, err
@@ -161,12 +175,13 @@ func (parser *parserWrapper) parseDay(input string) (*time.Time, error) {
 }
 
 func (parser *parserWrapper) getDayPart(input string, start int) (time.Weekday, error) {
+	input = strings.ToLower(input)
+
 	dayPart := strings.Trim(input[start:], parserCutset)
 	if len(dayPart) < 3 {
 		return -1, errors.New("day is too short")
 	}
-
-	dayPart = input[:3]
+	dayPart = dayPart[:3]
 
 	switch dayPart {
 	case "mon":
@@ -195,9 +210,9 @@ func (parser *parserWrapper) getDateFromWeekday(relative relative, day time.Week
 	case none:
 		result = parser.getClosestDayInstance(day)
 	case this:
-		result = parser.getClosestDayInstance(day)
+		result = parser.getThisDayInstance(day)
 	case last:
-		result = parser.getPreviousDayInstance(day)
+		result = parser.getLastDayInstance(day)
 	case next:
 		result = parser.getNextDayInstance(day)
 	}
@@ -214,26 +229,34 @@ func (parser *parserWrapper) getClosestDayInstance(day time.Weekday) time.Time {
 	return parser.now().AddDate(0, 0, int(day-currentDay))
 }
 
-func (parser *parserWrapper) getPreviousDayInstance(day time.Weekday) time.Time {
+func (parser *parserWrapper) getThisDayInstance(day time.Weekday) time.Time {
 	currentDay := parser.now().Weekday()
 
-	diff := mod(int(currentDay - day), 7)
+	diff := mod(int(day-currentDay), 7)
+
+	return parser.now().AddDate(0, 0, diff)
+}
+
+func (parser *parserWrapper) getLastDayInstance(day time.Weekday) time.Time {
+	currentDay := parser.now().Weekday()
+
+	diff := mod(int(currentDay-day), 7)
 	if diff == 0 {
 		diff = 7
 	}
 
-	return parser.now().AddDate(0, 0, int(-diff))
+	return parser.now().AddDate(0, 0, -diff)
 }
 
 func (parser *parserWrapper) getNextDayInstance(day time.Weekday) time.Time {
 	currentDay := parser.now().Weekday()
 
-	diff := mod(int(day - currentDay), 7)
-	if diff == 0 {
-		diff = 7
+	if day < currentDay && day != 0 {
+		return parser.getThisDayInstance(day)
 	}
 
-	return parser.now().AddDate(0, 0, int(diff))
+	diff := mod(int(day-currentDay), 7)
+	return parser.now().AddDate(0, 0, 7+diff)
 }
 
 // mod implements Python-like modulo behavior
