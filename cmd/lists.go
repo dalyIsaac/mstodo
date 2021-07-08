@@ -23,7 +23,6 @@ import (
 	"github.com/dalyisaac/mstodo/api"
 	"github.com/dalyisaac/mstodo/utils"
 	"github.com/jedib0t/go-pretty/v6/table"
-	"github.com/jedib0t/go-pretty/v6/text"
 	"github.com/spf13/cobra"
 )
 
@@ -68,10 +67,17 @@ func createListsCmd() *cobra.Command {
 
 	listsCmd.Flags().StringVarP(&filterFlag, "filter", "f", ".", "Filter the lists which contain this regex")
 	listsCmd.Flags().StringVarP(&sortFlag, "sort", "s", "none", "Sort by the name - choices: "+utils.GetSortOptions())
-	listsCmd.Flags().StringVarP(&excludeFlag, "exclude", "x", "", "Exclude columns: "+utils.GetSortOptions())
+	listsCmd.Flags().StringVarP(&excludeFlag, "exclude", "x", "", "Exclude columns")
 	listsCmd.Flags().BoolVarP(&showIdFlag, "id", "i", false, "Show the list IDs")
 
 	return listsCmd
+}
+
+var listsCmdCols = []table.ColumnConfig{
+	utils.LeftColumn("ID"),
+	utils.LeftColumn("Name"),
+	utils.CenterColumn("Owner"),
+	utils.CenterColumn("Shared"),
 }
 
 func getListsCmdParams(filterFlag, sortFlag, excludeFlag string, showIdFlag bool) (*listsParams, error) {
@@ -87,17 +93,13 @@ func getListsCmdParams(filterFlag, sortFlag, excludeFlag string, showIdFlag bool
 		return nil, err
 	}
 
+	// Show ID flag
 	if !showIdFlag {
 		excludeFlag = "ID," + excludeFlag
 	}
 
 	// Construct excluded columns
-	cols, err := utils.GetAllowedColumns(excludeFlag, []table.ColumnConfig{
-		{Name: "ID", Align: text.AlignLeft, Transformer: utils.Transformer},
-		{Name: "Name", Align: text.AlignLeft, Transformer: utils.Transformer},
-		{Name: "Owner", Align: text.AlignCenter, Transformer: utils.Transformer},
-		{Name: "Shared", Align: text.AlignCenter, Transformer: utils.Transformer},
-	})
+	cols, err := utils.GetAllowedColumns(excludeFlag, listsCmdCols)
 	if err != nil {
 		return nil, err
 	}
@@ -110,20 +112,21 @@ func getListsCmdParams(filterFlag, sortFlag, excludeFlag string, showIdFlag bool
 }
 
 func printTaskListList(taskListList api.TodoTaskListList, params *listsParams) {
-	rows := table.Row{}
+	headerRow := table.Row{}
 	columns := params.columns
 
+	// Add the column names to the header row
 	for _, c := range columns {
-		rows = append(rows, c.Name)
+		headerRow = append(headerRow, c.Name)
 	}
 
-	t := utils.CreateFormattedTable(&rows, &columns)
+	t := utils.CreateFormattedTable(&headerRow, &columns)
 
-	for _, taskItem := range taskListList {
-		if params.filter.MatchString(taskItem.DisplayName) {
+	for _, taskList := range taskListList {
+		if params.filter.MatchString(taskList.DisplayName) {
 			row := table.Row{}
 
-			row = append(row, getAllowedTaskItemFields(taskItem, columns)...)
+			row = append(row, getAllowedTaskListItemFields(taskList, columns)...)
 			t.AppendRow(row)
 		}
 	}
@@ -137,7 +140,7 @@ func printTaskListList(taskListList api.TodoTaskListList, params *listsParams) {
 	t.Render()
 }
 
-func getAllowedTaskItemFields(taskItem api.TodoTaskListItem, columns []table.ColumnConfig) table.Row {
+func getAllowedTaskListItemFields(taskItem api.TodoTaskListItem, columns []table.ColumnConfig) table.Row {
 	fields := table.Row{}
 
 	for _, col := range columns {

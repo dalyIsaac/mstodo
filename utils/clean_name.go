@@ -18,18 +18,16 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 package utils
 
 import (
+	"errors"
 	"strings"
 )
 
-// Checks to see if the items array contains the target string.
-// During comparison, each item and the target are compared with lowercase.
-func ContainsString(items []string, target string) bool {
-	target = strings.ToLower(target)
+func CleanName(name string) (string, error) {
+	name = strings.Trim(name, " ")
 
-	for _, v := range items {
-		if strings.ToLower(v) == target {
-			return true
-		}
+	if name == "" {
+		return name, errors.New("name was empty")
 	}
-	return false
+
+	return strings.ToLower(name), nil
 }

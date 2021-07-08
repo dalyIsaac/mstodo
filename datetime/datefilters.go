@@ -15,21 +15,37 @@ You should have received a copy of the GNU General Public License
 along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-package utils
+package datetime
 
-import (
-	"strings"
-)
+import "time"
 
-// Checks to see if the items array contains the target string.
-// During comparison, each item and the target are compared with lowercase.
-func ContainsString(items []string, target string) bool {
-	target = strings.ToLower(target)
+type DateFilters struct {
+	Start *time.Time
+	End   *time.Time
+}
 
-	for _, v := range items {
-		if strings.ToLower(v) == target {
-			return true
+func (filters *DateFilters) Contains(g *GraphTime) bool {
+	if filters == nil {
+		return true
+	}
+
+	if g == nil {
+		return false
+	}
+
+	t := time.Time(*g)
+
+	if filters.Start != nil {
+		if t.Before(*filters.Start) {
+			return false
 		}
 	}
-	return false
+
+	if filters.End != nil {
+		if t.After(*filters.End) {
+			return false
+		}
+	}
+
+	return true
 }

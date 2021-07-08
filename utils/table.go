@@ -21,6 +21,7 @@ import (
 	"os"
 
 	"github.com/jedib0t/go-pretty/v6/table"
+	"github.com/jedib0t/go-pretty/v6/text"
 	"github.com/spf13/viper"
 )
 
@@ -95,5 +96,22 @@ func matchTableStyle(style string) *table.Style {
 		return &table.StyleRounded
 	default:
 		return nil
+	}
+}
+
+func LeftColumn(name string) table.ColumnConfig {
+	return table.ColumnConfig{Name: name, Transformer: Transformer}
+}
+
+func CenterColumn(name string) table.ColumnConfig {
+	return CenterColumnTransformer(name, Transformer)
+}
+
+func CenterColumnTransformer(name string, transformer text.Transformer) table.ColumnConfig {
+	return table.ColumnConfig{
+		Name:        name,
+		Align:       text.AlignCenter,
+		AlignHeader: text.AlignCenter,
+		Transformer: transformer,
 	}
 }

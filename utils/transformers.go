@@ -17,7 +17,14 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 package utils
 
-import "github.com/jedib0t/go-pretty/v6/text"
+import (
+	"time"
+
+	"github.com/dalyisaac/mstodo/datetime"
+	"github.com/dustin/go-humanize"
+	"github.com/iancoleman/strcase"
+	"github.com/jedib0t/go-pretty/v6/text"
+)
 
 func boolToEmoji(v bool) string {
 	if v {
@@ -33,6 +40,39 @@ var Transformer = text.Transformer(func(val interface{}) string {
 		return boolToEmoji(val)
 	case string:
 		return val
+	case time.Time:
+		return humanize.Time(val)
+	case *datetime.GraphTime:
+		if val == nil {
+			return ""
+		}
+		return humanize.Time(time.Time(*val))
+	default:
+		return "unknown type"
+	}
+})
+
+var StatusTransformer = text.Transformer(func(val interface{}) string {
+	switch val := val.(type) {
+	case string:
+		val = strcase.ToDelimited(val, ' ')
+		if val == "completed" {
+			val = "✅"
+		}
+		return val
+	}
+	return "expected type string"
+})
+
+var AbsoluteTimeTransformer = text.Transformer(func(val interface{}) string {
+	switch val := val.(type) {
+	case time.Time:
+		return val.Format(time.RFC1123)
+	case *datetime.GraphTime:
+		if val == nil {
+			return ""
+		}
+		return time.Time(*val).Format(time.RFC1123)
 	default:
 		return "unknown type"
 	}
