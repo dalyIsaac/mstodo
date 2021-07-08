@@ -81,9 +81,9 @@ func Test_contains(t *testing.T) {
 		args args
 		want int
 	}{
-		{name: "'start mon' contains 'start'", args: args{s: "start mon", substring: "start"}, want: 5 },
-		{name: "'start mon' contains 'end'", args: args{s: "start mon", substring: "end"}, want: -1 },
-		{name: "too short", args: args{s: "end", substring: "start"}, want: -1 },
+		{name: "'start mon' contains 'start'", args: args{s: "start mon", substring: "start"}, want: 5},
+		{name: "'start mon' contains 'end'", args: args{s: "start mon", substring: "end"}, want: -1},
+		{name: "too short", args: args{s: "end", substring: "start"}, want: -1},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -545,7 +545,6 @@ func p(t time.Time) *time.Time {
 func date(day int, month time.Month) time.Time {
 	return time.Date(2021, month, day, 0, 0, 0, 0, time.UTC)
 }
-
 
 func Test_mod(t *testing.T) {
 	type args struct {
