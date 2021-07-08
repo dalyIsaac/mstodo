@@ -20,7 +20,7 @@ package utils
 import (
 	"time"
 
-	"github.com/dalyisaac/mstodo/api"
+	"github.com/dalyisaac/mstodo/datetime"
 	"github.com/dustin/go-humanize"
 	"github.com/iancoleman/strcase"
 	"github.com/jedib0t/go-pretty/v6/text"
@@ -42,7 +42,7 @@ var Transformer = text.Transformer(func(val interface{}) string {
 		return val
 	case time.Time:
 		return humanize.Time(val)
-	case *api.GraphTime:
+	case *datetime.GraphTime:
 		if val == nil {
 			return ""
 		}
@@ -68,7 +68,7 @@ var AbsoluteTimeTransformer = text.Transformer(func(val interface{}) string {
 	switch val := val.(type) {
 	case time.Time:
 		return val.Format(time.RFC1123)
-	case *api.GraphTime:
+	case *datetime.GraphTime:
 		if val == nil {
 			return ""
 		}
