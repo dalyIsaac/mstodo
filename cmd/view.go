@@ -266,7 +266,7 @@ type viewCanAddDate struct {
 func (params *viewParams) canAdd(task api.TodoTask) bool {
 	checkStrings := []viewCanAddRegexp{
 		{filter: params.titleFilter, field: &task.Title},
-		{filter: params.statusFilter, field: &task.Status},
+		{filter: params.statusFilter, field: status(task.Status)},
 	}
 
 	for _, f := range checkStrings {
@@ -325,4 +325,10 @@ func getAllowedTodoTaskFields(todoTask api.TodoTask, columns []table.ColumnConfi
 func graphtime(t time.Time) *datetime.GraphTime {
 	g := datetime.GraphTime(t)
 	return &g
+}
+
+// status converts the `GraphStatus` g into a string pointer
+func status(g api.GraphStatus) *string {
+	s := string(g)
+	return &s
 }
