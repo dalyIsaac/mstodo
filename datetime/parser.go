@@ -29,22 +29,26 @@ type parseType int
 
 const (
 	dateParseType parseType = iota
-	datetimeParseType
+	dateTimeParseType
 )
 
-var filterParser = (&parserWrapper{now: func() time.Time {
+var wrapperInstance = (&parserWrapper{now: func() time.Time {
 	n := time.Now()
 	return time.Date(n.Year(), n.Month(), n.Day(), 0, 0, 0, 0, time.UTC)
-}}).filterParser
+}})
 
 // Exported date parser
-var DateParser = func(input string) (*DateFilters, error) {
-	return filterParser(input, dateParseType)
+var DateStartEndParser = func(input string) (*DateFilters, error) {
+	return wrapperInstance.filterParser(input, dateParseType)
 }
 
-// Exported datetime parser
-var DateTimeParser = func(input string) (*DateFilters, error) {
-	return filterParser(input, datetimeParseType)
+// DateTime parser
+var DateTimeParser = func(input string) (*time.Time, error) {
+	return wrapperInstance.parse(input, 0, dateTimeParseType)
+}
+
+var DateParser = func(input string) (*time.Time, error) {
+	return wrapperInstance.parse(input, 0, dateParseType)
 }
 
 func (parser *parserWrapper) filterParser(input string, parseType parseType) (*DateFilters, error) {
@@ -148,7 +152,7 @@ func generateDateTimeLayouts() []string {
 func (parser *parserWrapper) parse(input string, startIdx int, parseType parseType) (*time.Time, error) {
 	layouts := dateLayouts
 
-	if parseType == datetimeParseType {
+	if parseType == dateTimeParseType {
 		layouts = generateDateTimeLayouts()
 	}
 

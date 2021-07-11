@@ -218,7 +218,7 @@ func setStringFilter(filter **regexp.Regexp, flag string) error {
 }
 
 func setDateFilter(filter **datetime.DateFilters, flag string) error {
-	res, err := datetime.DateParser(flag)
+	res, err := datetime.DateStartEndParser(flag)
 	if err != nil {
 		return err
 	}
