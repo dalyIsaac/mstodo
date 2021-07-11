@@ -58,7 +58,7 @@ func createAddCmd() *cobra.Command {
 			}
 
 			// Construct task
-			task, err := constructTask(flags, args[0])
+			task, err := constructTaskPayload(flags, args[0])
 			if err != nil {
 				return err
 			}
@@ -92,7 +92,7 @@ func createAddCmd() *cobra.Command {
 	return addCmd
 }
 
-func constructTask(flags addParamsFlags, title string) (*api.TodoTask, error) {
+func constructTaskPayload(flags addParamsFlags, title string) (*api.TodoTask, error) {
 	task := api.TodoTask{}
 
 	// title
@@ -103,6 +103,7 @@ func constructTask(flags addParamsFlags, title string) (*api.TodoTask, error) {
 	task.Title = title
 
 	// reminder
+	task.IsReminderOn = false
 	if flags.reminder != emptyString {
 		if reminder, err := datetime.DateTimeParser(flags.reminder); err != nil {
 			return nil, err
@@ -125,6 +126,7 @@ func constructTask(flags addParamsFlags, title string) (*api.TodoTask, error) {
 	if !utils.ContainsString(api.GraphStatusOptions, flags.status) {
 		return nil, fmt.Errorf("'%v' is not a valid value for status", flags.status)
 	}
+	task.Status = api.GraphStatus(flags.status)
 
 	// importance
 	if !utils.ContainsString(importanceChoices, flags.importance) {

@@ -22,8 +22,6 @@ import (
 	"fmt"
 	"strings"
 	"time"
-
-	"github.com/dustin/go-humanize"
 )
 
 // Custom time unmarshalling
@@ -58,12 +56,6 @@ type dateTimeTimeZone struct {
 	TimeZone dateTimeTimeZoneLocation `json:"timeZone"`
 }
 
-func (dt *dateTimeTimeZone) String() string {
-	t := time.Time(dt.DateTime)
-	l := time.Location(dt.TimeZone)
-	return fmt.Sprintf("%v (%v)", humanize.Time(t), l.String())
-}
-
 // GraphTime
 type GraphTime time.Time
 
@@ -81,4 +73,30 @@ func (t *GraphTime) UnmarshalJSON(b []byte) (err error) {
 
 	*t = GraphTime(time.Date(year, month, day, hour, min, sec, nsec, &loc))
 	return nil
+}
+
+type GraphTimeMarshal struct {
+	DateTime string `json:"dateTime"`
+	TimeZone string `json:"timeZone"`
+}
+
+// Marshal is called by TodoTask.MarshalJSON
+func (t *GraphTime) Marshal() *GraphTimeMarshal {
+	ct := time.Time(*t)
+
+	// Get dateTime
+	year, month, day := ct.Date()
+	hour, minute, second := ct.Clock()
+	nanosecond := ct.Nanosecond()
+
+	dateStr := fmt.Sprintf("%04d-%02d-%02d", year, month, day)
+	timeStr := fmt.Sprintf("%04d:%02d:%02d.%07d", hour, minute, second, nanosecond)
+	dateTime := fmt.Sprintf("%vT%v", dateStr, timeStr)
+
+	// Get timeZone
+	timeZone := ct.Location().String()
+
+	// Marshal
+	result := GraphTimeMarshal{DateTime: dateTime, TimeZone: timeZone}
+	return &result
 }

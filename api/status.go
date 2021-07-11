@@ -36,9 +36,9 @@ func (status *GraphStatus) UnmarshalJSON(b []byte) (err error) {
 	return nil
 }
 
-func (status *GraphStatus) MarshalJSON() ([]byte, error) {
-	res := strcase.ToLowerCamel(string(*status))
-	return json.Marshal(&res)
+// Marshal is called by TodoTask.MarshalJSON
+func (status *GraphStatus) Marshal() (string) {
+	return strcase.ToLowerCamel(string(*status))
 }
 
 var GraphStatusOptions = []string{"not started", "in progress", "completed", "waiting on others", "deferred"}
