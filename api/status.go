@@ -35,3 +35,10 @@ func (status *GraphStatus) UnmarshalJSON(b []byte) (err error) {
 	*status = GraphStatus(strcase.ToDelimited(str, ' '))
 	return nil
 }
+
+func (status *GraphStatus) MarshalJSON() ([]byte, error) {
+	res := strcase.ToLowerCamel(string(*status))
+	return json.Marshal(&res)
+}
+
+var GraphStatusOptions = []string{"not started", "in progress", "completed", "waiting on others", "deferred"}

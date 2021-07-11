@@ -60,3 +60,24 @@ func GetTasks(listId string) (*TodoTaskList, error) {
 	tasks := resp.Result().(*todoTaskListResponse).Value
 	return &tasks, nil
 }
+
+func CreateTask(listId string, task *TodoTask) error {
+	// Create request
+	req, err := CreateRequest()
+	if err != nil {
+		return err
+	}
+
+	// Post request
+	url := fmt.Sprintf("/me/todo/lists/%v/tasks", listId)
+	resp, err := req.SetBody(task).Post(url)
+	if err != nil {
+		return err
+	}
+
+	if code := resp.StatusCode(); code != 201 {
+		return fmt.Errorf("http code: %v\n%v", code, string(resp.Body()))
+	}
+
+	return nil
+}

@@ -32,10 +32,7 @@ const (
 	dateTimeParseType
 )
 
-var wrapperInstance = (&parserWrapper{now: func() time.Time {
-	n := time.Now()
-	return time.Date(n.Year(), n.Month(), n.Day(), 0, 0, 0, 0, time.UTC)
-}})
+var wrapperInstance = (&parserWrapper{now: time.Now})
 
 // Exported date parser
 var DateStartEndParser = func(input string) (*DateFilters, error) {
