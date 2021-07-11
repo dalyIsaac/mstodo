@@ -23,14 +23,31 @@ import (
 	"time"
 )
 
-var FilterParser = (&parserWrapper{now: func() time.Time {
+const parserCutset = "[] '\""
+
+type parseType int
+
+const (
+	dateParseType parseType = iota
+	datetimeParseType
+)
+
+var filterParser = (&parserWrapper{now: func() time.Time {
 	n := time.Now()
 	return time.Date(n.Year(), n.Month(), n.Day(), 0, 0, 0, 0, time.UTC)
 }}).filterParser
 
-const parserCutset = "[] '\""
+// Exported date parser
+var DateParser = func(input string) (*DateFilters, error) {
+	return filterParser(input, dateParseType)
+}
 
-func (parser *parserWrapper) filterParser(input string) (*DateFilters, error) {
+// Exported datetime parser
+var DateTimeParser = func(input string) (*DateFilters, error) {
+	return filterParser(input, datetimeParseType)
+}
+
+func (parser *parserWrapper) filterParser(input string, parseType parseType) (*DateFilters, error) {
 	parts := strings.Split(input, ";")
 	filters := DateFilters{}
 
@@ -48,9 +65,9 @@ func (parser *parserWrapper) filterParser(input string) (*DateFilters, error) {
 		p = strings.Trim(strings.ToLower(p), parserCutset)
 
 		if idx := contains(p, "start"); idx != -1 {
-			start, err = parser.parseDate(p, idx)
+			start, err = parser.parse(p, idx, parseType)
 		} else if idx := contains(p, "end"); idx != -1 {
-			end, err = parser.parseDate(p, idx)
+			end, err = parser.parse(p, idx, parseType)
 		} else {
 			return nil, errors.New("missing qualifier")
 		}
@@ -97,10 +114,47 @@ var dateLayouts = []string{
 	"January 02, 2006",
 }
 
-func (parser *parserWrapper) parseDate(input string, startIdx int) (*time.Time, error) {
+var timeLayouts = []string{
+	"15:04",
+	"3:04 PM",
+	"3:04 pm",
+	"3:04PM",
+	"3:04pm",
+	"03:04 PM",
+	"03:04 pm",
+	"03:04PM",
+	"03:04pm",
+}
+
+func generateDateTimeLayouts() []string {
+	layouts := make([]string, len(dateLayouts)*len(timeLayouts)*8)
+
+	for _, d := range dateLayouts {
+		for _, v := range timeLayouts {
+			layouts = append(layouts, d+" at "+v)
+			layouts = append(layouts, d+", at "+v)
+			layouts = append(layouts, d+" "+v)
+			layouts = append(layouts, d+", "+v)
+			layouts = append(layouts, v+" "+d)
+			layouts = append(layouts, v+", "+d)
+			layouts = append(layouts, v+" on "+d)
+			layouts = append(layouts, v+", on "+d)
+		}
+	}
+
+	return layouts
+}
+
+func (parser *parserWrapper) parse(input string, startIdx int, parseType parseType) (*time.Time, error) {
+	layouts := dateLayouts
+
+	if parseType == datetimeParseType {
+		layouts = generateDateTimeLayouts()
+	}
+
 	input = input[startIdx:]
 
-	for _, layout := range dateLayouts {
+	for _, layout := range layouts {
 		if date, err := time.Parse(layout, input); err == nil {
 			return parser.fixYear(date), nil
 		}

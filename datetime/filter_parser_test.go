@@ -28,7 +28,8 @@ func Test_parserWrapper_parser(t *testing.T) {
 		now func() time.Time
 	}
 	type args struct {
-		input string
+		input     string
+		parseType parseType
 	}
 
 	testFields := fields{now: func() time.Time {
@@ -47,21 +48,21 @@ func Test_parserWrapper_parser(t *testing.T) {
 		want    *DateFilters
 		wantErr bool
 	}{
-		{name: "start end", fields: testFields, wantErr: false, args: args{input: "start Monday; end Friday"}, want: filterP(DateFilters{Start: p(date(5, 7)), End: p(date(9, 7))})},
-		{name: "end start", fields: testFields, wantErr: false, args: args{input: "end Friday; start Monday"}, want: filterP(DateFilters{Start: p(date(5, 7)), End: p(date(9, 7))})},
-		{name: "only start", fields: testFields, wantErr: false, args: args{input: "start Monday"}, want: filterP(DateFilters{Start: p(date(5, 7))})},
-		{name: "only end", fields: testFields, wantErr: false, args: args{input: "end Friday"}, want: filterP(DateFilters{End: p(date(9, 7))})},
-		{name: "no qualifier", fields: testFields, wantErr: true, args: args{input: "monday"}, want: nil},
-		{name: "force error", fields: testFields, wantErr: true, args: args{input: "start garbage"}, want: nil},
-		{name: "too many parts", fields: testFields, wantErr: true, args: args{"a;b;c"}, want: nil},
-		{name: "empty filter", fields: testFields, wantErr: true, args: args{"a;b;c"}, want: nil},
+		{name: "start end", fields: testFields, wantErr: false, args: args{input: "start Monday; end Friday", parseType: dateParseType}, want: filterP(DateFilters{Start: p(date(5, 7)), End: p(date(9, 7))})},
+		{name: "end start", fields: testFields, wantErr: false, args: args{input: "end Friday; start Monday", parseType: dateParseType}, want: filterP(DateFilters{Start: p(date(5, 7)), End: p(date(9, 7))})},
+		{name: "only start", fields: testFields, wantErr: false, args: args{input: "start Monday", parseType: dateParseType}, want: filterP(DateFilters{Start: p(date(5, 7))})},
+		{name: "only end", fields: testFields, wantErr: false, args: args{input: "end Friday", parseType: dateParseType}, want: filterP(DateFilters{End: p(date(9, 7))})},
+		{name: "no qualifier", fields: testFields, wantErr: true, args: args{input: "monday", parseType: dateParseType}, want: nil},
+		{name: "force error", fields: testFields, wantErr: true, args: args{input: "start garbage", parseType: dateParseType}, want: nil},
+		{name: "too many parts", fields: testFields, wantErr: true, args: args{input: "a;b;c", parseType: dateParseType}, want: nil},
+		{name: "empty filter", fields: testFields, wantErr: true, args: args{input: "a;b;c", parseType: dateParseType}, want: nil},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			parser := &parserWrapper{
 				now: tt.fields.now,
 			}
-			got, err := parser.filterParser(tt.args.input)
+			got, err := parser.filterParser(tt.args.input, tt.args.parseType)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("parserWrapper.parser() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -102,6 +103,7 @@ func Test_parserWrapper_parseDate(t *testing.T) {
 	}
 	type args struct {
 		input string
+		parseType parseType
 	}
 
 	testFields := fields{now: func() time.Time {
@@ -110,6 +112,7 @@ func Test_parserWrapper_parseDate(t *testing.T) {
 	}}
 
 	wantDate := p(time.Date(2021, time.January, 2, 0, 0, 0, 0, time.UTC))
+	wantDatetime := p(time.Date(2021, time.January, 2, 20, 13, 0, 0, time.UTC))
 
 	tests := []struct {
 		fields  fields
@@ -117,33 +120,56 @@ func Test_parserWrapper_parseDate(t *testing.T) {
 		want    *time.Time
 		wantErr bool
 	}{
-		{args: args{"02/Jan/2021"}, fields: testFields, want: wantDate, wantErr: false},
-		{args: args{"02/JAN/2021"}, fields: testFields, want: wantDate, wantErr: false},
-		{args: args{"02-Jan-2021"}, fields: testFields, want: wantDate, wantErr: false},
-		{args: args{"02-JAN-2021"}, fields: testFields, want: wantDate, wantErr: false},
-		{args: args{"02-Jan-21"}, fields: testFields, want: wantDate, wantErr: false},
-		{args: args{"02-JAN-21"}, fields: testFields, want: wantDate, wantErr: false},
-		{args: args{"2/Jan/2021"}, fields: testFields, want: wantDate, wantErr: false},
-		{args: args{"2/JAN/2021"}, fields: testFields, want: wantDate, wantErr: false},
-		{args: args{"02/01/2021"}, fields: testFields, want: wantDate, wantErr: false},
-		{args: args{"2/01/2021"}, fields: testFields, want: wantDate, wantErr: false},
-		{args: args{"2/01"}, fields: testFields, want: wantDate, wantErr: false},
-		{args: args{"02-Jan 2021"}, fields: testFields, want: wantDate, wantErr: false},
-		{args: args{"02-Jan"}, fields: testFields, want: wantDate, wantErr: false},
-		{args: args{"Jan 02, 2021"}, fields: testFields, want: wantDate, wantErr: false},
-		{args: args{"Jan 02"}, fields: testFields, want: wantDate, wantErr: false},
-		{args: args{"Jan 2"}, fields: testFields, want: wantDate, wantErr: false},
-		{args: args{"January 02, 2021"}, fields: testFields, want: wantDate, wantErr: false},
-		{args: args{"last Mon"}, fields: testFields, want: p(date(5, 7)), wantErr: false},
-		{args: args{"Monday"}, fields: testFields, want: p(date(5, 7)), wantErr: false},
-		{args: args{"garbage"}, fields: testFields, want: nil, wantErr: true},
+		// dateParseType
+		{args: args{input: "02/Jan/2021", parseType: dateParseType}, fields: testFields, want: wantDate, wantErr: false},
+		{args: args{input: "02/JAN/2021", parseType: dateParseType}, fields: testFields, want: wantDate, wantErr: false},
+		{args: args{input: "02-Jan-2021", parseType: dateParseType}, fields: testFields, want: wantDate, wantErr: false},
+		{args: args{input: "02-JAN-2021", parseType: dateParseType}, fields: testFields, want: wantDate, wantErr: false},
+		{args: args{input: "02-Jan-21", parseType: dateParseType}, fields: testFields, want: wantDate, wantErr: false},
+		{args: args{input: "02-JAN-21", parseType: dateParseType}, fields: testFields, want: wantDate, wantErr: false},
+		{args: args{input: "2/Jan/2021", parseType: dateParseType}, fields: testFields, want: wantDate, wantErr: false},
+		{args: args{input: "2/JAN/2021", parseType: dateParseType}, fields: testFields, want: wantDate, wantErr: false},
+		{args: args{input: "02/01/2021", parseType: dateParseType}, fields: testFields, want: wantDate, wantErr: false},
+		{args: args{input: "2/01/2021", parseType: dateParseType}, fields: testFields, want: wantDate, wantErr: false},
+		{args: args{input: "2/01", parseType: dateParseType}, fields: testFields, want: wantDate, wantErr: false},
+		{args: args{input: "02-Jan 2021", parseType: dateParseType}, fields: testFields, want: wantDate, wantErr: false},
+		{args: args{input: "02-Jan", parseType: dateParseType}, fields: testFields, want: wantDate, wantErr: false},
+		{args: args{input: "Jan 02, 2021", parseType: dateParseType}, fields: testFields, want: wantDate, wantErr: false},
+		{args: args{input: "Jan 02", parseType: dateParseType}, fields: testFields, want: wantDate, wantErr: false},
+		{args: args{input: "Jan 2", parseType: dateParseType}, fields: testFields, want: wantDate, wantErr: false},
+		{args: args{input: "January 02, 2021", parseType: dateParseType}, fields: testFields, want: wantDate, wantErr: false},
+		{args: args{input: "last Mon", parseType: dateParseType}, fields: testFields, want: p(date(5, 7)), wantErr: false},
+		{args: args{input: "Monday", parseType: dateParseType}, fields: testFields, want: p(date(5, 7)), wantErr: false},
+		{args: args{input: "garbage", parseType: dateParseType}, fields: testFields, want: nil, wantErr: true},
+
+		// datetimeParseType
+		{args: args{input: "02/Jan/2021 at 20:13", parseType: datetimeParseType}, fields: testFields, want: wantDatetime, wantErr: false},
+		{args: args{input: "02/JAN/2021, at 20:13", parseType: datetimeParseType}, fields: testFields, want: wantDatetime, wantErr: false},
+		{args: args{input: "02-Jan-2021 20:13", parseType: datetimeParseType}, fields: testFields, want: wantDatetime, wantErr: false},
+		{args: args{input: "02-JAN-2021, 20:13", parseType: datetimeParseType}, fields: testFields, want: wantDatetime, wantErr: false},
+		{args: args{input: "20:13 02-Jan-21", parseType: datetimeParseType}, fields: testFields, want: wantDatetime, wantErr: false},
+		{args: args{input: "20:13, 02-JAN-21", parseType: datetimeParseType}, fields: testFields, want: wantDatetime, wantErr: false},
+		{args: args{input: "2/Jan/2021 at 08:13 PM", parseType: datetimeParseType}, fields: testFields, want: wantDatetime, wantErr: false},
+		{args: args{input: "2/JAN/2021 at 08:13 pm", parseType: datetimeParseType}, fields: testFields, want: wantDatetime, wantErr: false},
+		{args: args{input: "02/01/2021 at 08:13PM", parseType: datetimeParseType}, fields: testFields, want: wantDatetime, wantErr: false},
+		{args: args{input: "2/01/2021 at 08:13pm", parseType: datetimeParseType}, fields: testFields, want: wantDatetime, wantErr: false},
+		{args: args{input: "2/01, 08:13pm", parseType: datetimeParseType}, fields: testFields, want: wantDatetime, wantErr: false},
+		{args: args{input: "8:13PM, 02-Jan 2021", parseType: datetimeParseType}, fields: testFields, want: wantDatetime, wantErr: false},
+		{args: args{input: "8:13pm, 02-Jan", parseType: datetimeParseType}, fields: testFields, want: wantDatetime, wantErr: false},
+		{args: args{input: "08:13PM on Jan 02, 2021", parseType: datetimeParseType}, fields: testFields, want: wantDatetime, wantErr: false},
+		{args: args{input: "08:13 pm, on Jan 02", parseType: datetimeParseType}, fields: testFields, want: wantDatetime, wantErr: false},
+		{args: args{input: "Jan 2 8:13PM", parseType: datetimeParseType}, fields: testFields, want: wantDatetime, wantErr: false},
+		{args: args{input: "January 02, 2021, 8:13pm", parseType: datetimeParseType}, fields: testFields, want: wantDatetime, wantErr: false},
+		{args: args{input: "last Mon", parseType: datetimeParseType}, fields: testFields, want: p(date(5, 7)), wantErr: false},
+		{args: args{input: "Monday", parseType: datetimeParseType}, fields: testFields, want: p(date(5, 7)), wantErr: false},
+		{args: args{input: "garbage", parseType: datetimeParseType}, fields: testFields, want: nil, wantErr: true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.args.input, func(t *testing.T) {
 			parser := &parserWrapper{
 				now: tt.fields.now,
 			}
-			got, err := parser.parseDate(tt.args.input, 0)
+			got, err := parser.parse(tt.args.input, 0, tt.args.parseType)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("parserWrapper.parseDate() error = %v, wantErr %v", err, tt.wantErr)
 				return
