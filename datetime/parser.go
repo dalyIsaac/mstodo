@@ -19,6 +19,7 @@ package datetime
 
 import (
 	"errors"
+	"regexp"
 	"strings"
 	"time"
 	_ "time/tzdata"
@@ -169,7 +170,19 @@ func (parser *parserWrapper) parse(input string, startIdx int, parseType parseTy
 	}
 
 	if date, err := parser.parseDay(input); err == nil {
-		return date, nil
+		if parseType == dateParseType {
+			return date, nil
+		}
+
+		// parsing datetime
+		parsedTime, err := parser.getTime(input)
+		if err != nil {
+			return nil, err
+		}
+
+		// combine parsed time and date
+		combined := parser.combineDateTime(date, parsedTime)
+		return combined, nil
 	}
 
 	return nil, errors.New("invalid date")
@@ -198,27 +211,19 @@ func (parser *parserWrapper) parseDay(input string) (*time.Time, error) {
 
 	// Get adjective
 	relative := none
-	start := 0
 
 	input = strings.ToLower(input)
 
-	if len(input) >= 8 {
-		start = 4
-		// last, this, next
-		switch input[:4] {
-		case "last":
-			relative = last
-		case "this":
-			relative = this
-		case "next":
-			relative = next
-		default:
-			start = 0
-		}
+	if strings.Contains(input, "last") {
+		relative = last
+	} else if strings.Contains(input, "this") {
+		relative = this
+	} else if strings.Contains(input, "next") {
+		relative = next
 	}
 
 	// Get day of week
-	day, err := parser.getDayPart(input, start)
+	day, err := parser.getDayPart(input)
 	if err != nil {
 		return nil, err
 	}
@@ -229,31 +234,50 @@ func (parser *parserWrapper) parseDay(input string) (*time.Time, error) {
 	return &result, nil
 }
 
-func (parser *parserWrapper) getDayPart(input string, start int) (time.Weekday, error) {
-	dayPart := strings.Trim(input[start:], parserCutset)
-	if len(dayPart) < 3 {
-		return -1, errors.New("day is too short")
-	}
-	dayPart = dayPart[:3]
+func (parser *parserWrapper) getDayPart(input string) (time.Weekday, error) {
+	input = strings.ToLower(input)
 
-	switch dayPart {
-	case "mon":
+	if strings.Contains(input, "mon") {
 		return time.Monday, nil
-	case "tue":
+	} else if strings.Contains(input, "tue") {
 		return time.Tuesday, nil
-	case "wed":
+	} else if strings.Contains(input, "wed") {
 		return time.Wednesday, nil
-	case "thu":
+	} else if strings.Contains(input, "thu") {
 		return time.Thursday, nil
-	case "fri":
+	} else if strings.Contains(input, "fri") {
 		return time.Friday, nil
-	case "sat":
+	} else if strings.Contains(input, "sat") {
 		return time.Saturday, nil
-	case "sun":
+	} else if strings.Contains(input, "sun") {
 		return time.Sunday, nil
-	default:
-		return -1, errors.New("invalid day")
 	}
+
+	return -1, errors.New("invalid day")
+}
+
+var timeRegexp = regexp.MustCompile(`[0-9]{1,2}:{0,1}[0-9]{1,2} *(am|pm){0,1}`)
+
+func (parser *parserWrapper) getTime(input string) (*time.Time, error) {
+	input = strings.ToLower(input)
+	match := timeRegexp.FindStringSubmatch(input)
+
+	if len(match) == 0 {
+		return nil, errors.New("invalid time")
+	}
+
+	for _, layout := range timeLayouts {
+		if res, err := time.Parse(layout, match[0]); err == nil {
+			return &res, nil
+		}
+	}
+
+	return nil, errors.New("invalid time")
+}
+
+func (parser *parserWrapper) combineDateTime(date *time.Time, parsedTime *time.Time) *time.Time {
+	combined := time.Date(date.Year(), date.Month(), date.Day(), parsedTime.Hour(), parsedTime.Minute(), parsedTime.Second(), parsedTime.Nanosecond(), date.Location())
+	return &combined
 }
 
 func (parser *parserWrapper) getDateFromWeekday(relative relative, day time.Weekday) time.Time {

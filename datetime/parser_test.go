@@ -102,7 +102,7 @@ func Test_parserWrapper_parseDate(t *testing.T) {
 		now func() time.Time
 	}
 	type args struct {
-		input string
+		input     string
 		parseType parseType
 	}
 
@@ -113,6 +113,7 @@ func Test_parserWrapper_parseDate(t *testing.T) {
 
 	wantDate := p(time.Date(2021, time.January, 2, 0, 0, 0, 0, time.UTC))
 	wantDatetime := p(time.Date(2021, time.January, 2, 20, 13, 0, 0, time.UTC))
+	lastMonDatetime := p(time.Date(2021, 7, 5, 20, 13, 0, 0, time.UTC))
 
 	tests := []struct {
 		fields  fields
@@ -160,8 +161,9 @@ func Test_parserWrapper_parseDate(t *testing.T) {
 		{args: args{input: "08:13 pm, on Jan 02", parseType: dateTimeParseType}, fields: testFields, want: wantDatetime, wantErr: false},
 		{args: args{input: "Jan 2 8:13PM", parseType: dateTimeParseType}, fields: testFields, want: wantDatetime, wantErr: false},
 		{args: args{input: "January 02, 2021, 8:13pm", parseType: dateTimeParseType}, fields: testFields, want: wantDatetime, wantErr: false},
-		{args: args{input: "last Mon", parseType: dateTimeParseType}, fields: testFields, want: p(date(5, 7)), wantErr: false},
-		{args: args{input: "Monday", parseType: dateTimeParseType}, fields: testFields, want: p(date(5, 7)), wantErr: false},
+		{args: args{input: "last Mon, 20:13", parseType: dateTimeParseType}, fields: testFields, want: lastMonDatetime, wantErr: false},
+		{args: args{input: "08:13 PM Monday", parseType: dateTimeParseType}, fields: testFields, want: lastMonDatetime, wantErr: false},
+		{args: args{input: "08:13 PM 33:88", parseType: dateTimeParseType}, fields: testFields, want: nil, wantErr: true},
 		{args: args{input: "garbage", parseType: dateTimeParseType}, fields: testFields, want: nil, wantErr: true},
 	}
 	for _, tt := range tests {
@@ -326,7 +328,6 @@ func Test_parserWrapper_getDayPart(t *testing.T) {
 	}
 	type args struct {
 		input string
-		start int
 	}
 
 	testFields := fields{now: func() time.Time {
@@ -340,36 +341,36 @@ func Test_parserWrapper_getDayPart(t *testing.T) {
 		want    time.Weekday
 		wantErr bool
 	}{
-		{fields: testFields, args: args{input: "mo", start: 0}, want: -1, wantErr: true},
-		{fields: testFields, args: args{input: "day", start: 0}, want: -1, wantErr: true},
-		{fields: testFields, args: args{input: "Monday", start: 0}, want: time.Monday, wantErr: false},
-		{fields: testFields, args: args{input: "Tuesday", start: 0}, want: time.Tuesday, wantErr: false},
-		{fields: testFields, args: args{input: "Wednesday", start: 0}, want: time.Wednesday, wantErr: false},
-		{fields: testFields, args: args{input: "Thursday", start: 0}, want: time.Thursday, wantErr: false},
-		{fields: testFields, args: args{input: "Friday", start: 0}, want: time.Friday, wantErr: false},
-		{fields: testFields, args: args{input: "Saturday", start: 0}, want: time.Saturday, wantErr: false},
-		{fields: testFields, args: args{input: "Sunday", start: 0}, want: time.Sunday, wantErr: false},
-		{fields: testFields, args: args{input: "mon", start: 0}, want: time.Monday, wantErr: false},
-		{fields: testFields, args: args{input: "tue", start: 0}, want: time.Tuesday, wantErr: false},
-		{fields: testFields, args: args{input: "wed", start: 0}, want: time.Wednesday, wantErr: false},
-		{fields: testFields, args: args{input: "thu", start: 0}, want: time.Thursday, wantErr: false},
-		{fields: testFields, args: args{input: "fri", start: 0}, want: time.Friday, wantErr: false},
-		{fields: testFields, args: args{input: "sat", start: 0}, want: time.Saturday, wantErr: false},
-		{fields: testFields, args: args{input: "sun", start: 0}, want: time.Sunday, wantErr: false},
-		{fields: testFields, args: args{input: "the date is mon", start: 12}, want: time.Monday, wantErr: false},
-		{fields: testFields, args: args{input: "the date is tue", start: 12}, want: time.Tuesday, wantErr: false},
-		{fields: testFields, args: args{input: "the date is wed", start: 12}, want: time.Wednesday, wantErr: false},
-		{fields: testFields, args: args{input: "the date is thu", start: 12}, want: time.Thursday, wantErr: false},
-		{fields: testFields, args: args{input: "the date is fri", start: 12}, want: time.Friday, wantErr: false},
-		{fields: testFields, args: args{input: "the date is sat", start: 12}, want: time.Saturday, wantErr: false},
-		{fields: testFields, args: args{input: "the date is sun", start: 12}, want: time.Sunday, wantErr: false},
+		{fields: testFields, args: args{input: "mo"}, want: -1, wantErr: true},
+		{fields: testFields, args: args{input: "day"}, want: -1, wantErr: true},
+		{fields: testFields, args: args{input: "Monday"}, want: time.Monday, wantErr: false},
+		{fields: testFields, args: args{input: "Tuesday"}, want: time.Tuesday, wantErr: false},
+		{fields: testFields, args: args{input: "Wednesday"}, want: time.Wednesday, wantErr: false},
+		{fields: testFields, args: args{input: "Thursday"}, want: time.Thursday, wantErr: false},
+		{fields: testFields, args: args{input: "Friday"}, want: time.Friday, wantErr: false},
+		{fields: testFields, args: args{input: "Saturday"}, want: time.Saturday, wantErr: false},
+		{fields: testFields, args: args{input: "Sunday"}, want: time.Sunday, wantErr: false},
+		{fields: testFields, args: args{input: "mon"}, want: time.Monday, wantErr: false},
+		{fields: testFields, args: args{input: "tue"}, want: time.Tuesday, wantErr: false},
+		{fields: testFields, args: args{input: "wed"}, want: time.Wednesday, wantErr: false},
+		{fields: testFields, args: args{input: "thu"}, want: time.Thursday, wantErr: false},
+		{fields: testFields, args: args{input: "fri"}, want: time.Friday, wantErr: false},
+		{fields: testFields, args: args{input: "sat"}, want: time.Saturday, wantErr: false},
+		{fields: testFields, args: args{input: "sun"}, want: time.Sunday, wantErr: false},
+		{fields: testFields, args: args{input: "the date is mon"}, want: time.Monday, wantErr: false},
+		{fields: testFields, args: args{input: "the date is tue"}, want: time.Tuesday, wantErr: false},
+		{fields: testFields, args: args{input: "the date is wed"}, want: time.Wednesday, wantErr: false},
+		{fields: testFields, args: args{input: "the date is thu"}, want: time.Thursday, wantErr: false},
+		{fields: testFields, args: args{input: "the date is fri"}, want: time.Friday, wantErr: false},
+		{fields: testFields, args: args{input: "the date is sat"}, want: time.Saturday, wantErr: false},
+		{fields: testFields, args: args{input: "the date is sun"}, want: time.Sunday, wantErr: false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.args.input, func(t *testing.T) {
 			parser := &parserWrapper{
 				now: tt.fields.now,
 			}
-			got, err := parser.getDayPart(tt.args.input, tt.args.start)
+			got, err := parser.getDayPart(tt.args.input)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("parserWrapper.getDayPart() error = %v, wantErr %v", err, tt.wantErr)
 				return
