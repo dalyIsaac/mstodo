@@ -82,21 +82,27 @@ type GraphTimeMarshal struct {
 
 // Marshal is called by TodoTask.MarshalJSON
 func (t *GraphTime) Marshal() *GraphTimeMarshal {
-	ct := time.Time(*t)
+	utc := t.toUTC()
 
 	// Get dateTime
-	year, month, day := ct.Date()
-	hour, minute, second := ct.Clock()
-	nanosecond := ct.Nanosecond()
+	year, month, day := utc.Date()
+	hour, minute, second := utc.Clock()
+	nanosecond := utc.Nanosecond()
 
 	dateStr := fmt.Sprintf("%04d-%02d-%02d", year, month, day)
-	timeStr := fmt.Sprintf("%04d:%02d:%02d.%07d", hour, minute, second, nanosecond)
+	timeStr := fmt.Sprintf("%02d:%02d:%02d.%07d", hour, minute, second, nanosecond)
 	dateTime := fmt.Sprintf("%vT%v", dateStr, timeStr)
 
 	// Get timeZone
-	timeZone := ct.Location().String()
+	timeZone := utc.Location().String()
 
 	// Marshal
 	result := GraphTimeMarshal{DateTime: dateTime, TimeZone: timeZone}
 	return &result
+}
+
+func (t *GraphTime) toUTC() *time.Time {
+	ct := time.Time(*t)
+	utc := ct.UTC()
+	return &utc
 }

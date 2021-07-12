@@ -21,6 +21,7 @@ import (
 	"errors"
 	"strings"
 	"time"
+	_ "time/tzdata"
 )
 
 const parserCutset = "[] '\""
