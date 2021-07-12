@@ -84,8 +84,8 @@ func createAddCmd() *cobra.Command {
 	}
 
 	addCmd.Flags().StringVarP(&flags.list, "list", "l", "tasks", "Add the task to the specified list")
-	addCmd.Flags().StringVarP(&flags.reminder, "reminder", "r", emptyString, "Task reminder (date time)")
-	addCmd.Flags().StringVarP(&flags.dueDate, "due-date", "d", emptyString, "Task due date (date)")
+	addCmd.Flags().StringVarP(&flags.reminder, "reminder", "r", emptyString, "Task reminder (date time). For example, --reminder=\"Next Friday at 15:00\"")
+	addCmd.Flags().StringVarP(&flags.dueDate, "due-date", "d", emptyString, "Task due date (date). For example, --due-date=\"next friday\"")
 	addCmd.Flags().StringVarP(&flags.importance, "importance", "i", "normal", fmt.Sprintf("Task importance - choices: [%v]", strings.Join(importanceChoices, ", ")))
 	addCmd.Flags().StringVarP(&flags.status, "status", "s", "not started", fmt.Sprintf("Task status - choices: [%v]", strings.Join(api.GraphStatusOptions, ", ")))
 
@@ -104,8 +104,9 @@ func constructTaskPayload(flags addParamsFlags, title string) (*api.TodoTask, er
 
 	// reminder
 	task.IsReminderOn = false
-	if flags.reminder != emptyString {
-		if reminder, err := datetime.DateTimeParser(flags.reminder); err != nil {
+	reminder := strings.Trim(flags.reminder, addCutset)
+	if reminder != emptyString {
+		if reminder, err := datetime.DateTimeParser(reminder); err != nil {
 			return nil, err
 		} else {
 			task.IsReminderOn = true
@@ -114,8 +115,9 @@ func constructTaskPayload(flags addParamsFlags, title string) (*api.TodoTask, er
 	}
 
 	// due date
-	if flags.dueDate != emptyString {
-		if dueDate, err := datetime.DateTimeParser(flags.dueDate); err != nil {
+	dueDate := strings.Trim(flags.dueDate, addCutset)
+	if dueDate != emptyString {
+		if dueDate, err := datetime.DateParser(dueDate); err != nil {
 			return nil, err
 		} else {
 			task.DueDateTime = (*datetime.GraphTime)(dueDate)
@@ -123,16 +125,18 @@ func constructTaskPayload(flags addParamsFlags, title string) (*api.TodoTask, er
 	}
 
 	// status
-	if !utils.ContainsString(api.GraphStatusOptions, flags.status) {
-		return nil, fmt.Errorf("'%v' is not a valid value for status", flags.status)
+	status := strings.Trim(flags.status, addCutset)
+	if !utils.ContainsString(api.GraphStatusOptions, status) {
+		return nil, fmt.Errorf("'%v' is not a valid value for status", status)
 	}
-	task.Status = api.GraphStatus(flags.status)
+	task.Status = api.GraphStatus(status)
 
 	// importance
-	if !utils.ContainsString(importanceChoices, flags.importance) {
-		return nil, fmt.Errorf("'%v' is not a valid value for importance", flags.importance)
+	importance := strings.Trim(flags.importance, addCutset)
+	if !utils.ContainsString(importanceChoices, importance) {
+		return nil, fmt.Errorf("'%v' is not a valid value for importance", importance)
 	}
-	task.Importance = flags.importance
+	task.Importance = importance
 
 	return &task, nil
 }
