@@ -128,19 +128,25 @@ var timeLayouts = []string{
 	"03:04pm",
 }
 
+func insert(slice []string, value string, idx int) ([]string, int) {
+	slice[idx] = value
+	return slice, idx + 1
+}
+
 func generateDateTimeLayouts() []string {
 	layouts := make([]string, len(dateLayouts)*len(timeLayouts)*8)
 
+	idx := 0
 	for _, d := range dateLayouts {
 		for _, v := range timeLayouts {
-			layouts = append(layouts, d+" at "+v)
-			layouts = append(layouts, d+", at "+v)
-			layouts = append(layouts, d+" "+v)
-			layouts = append(layouts, d+", "+v)
-			layouts = append(layouts, v+" "+d)
-			layouts = append(layouts, v+", "+d)
-			layouts = append(layouts, v+" on "+d)
-			layouts = append(layouts, v+", on "+d)
+			layouts, idx = insert(layouts, d+" at "+v, idx)
+			layouts, idx = insert(layouts, d+", at "+v, idx)
+			layouts, idx = insert(layouts, d+" "+v, idx)
+			layouts, idx = insert(layouts, d+", "+v, idx)
+			layouts, idx = insert(layouts, v+" "+d, idx)
+			layouts, idx = insert(layouts, v+", "+d, idx)
+			layouts, idx = insert(layouts, v+" on "+d, idx)
+			layouts, idx = insert(layouts, v+", on "+d, idx)
 		}
 	}
 
@@ -194,6 +200,8 @@ func (parser *parserWrapper) parseDay(input string) (*time.Time, error) {
 	relative := none
 	start := 0
 
+	input = strings.ToLower(input)
+
 	if len(input) >= 8 {
 		start = 4
 		// last, this, next
@@ -222,8 +230,6 @@ func (parser *parserWrapper) parseDay(input string) (*time.Time, error) {
 }
 
 func (parser *parserWrapper) getDayPart(input string, start int) (time.Weekday, error) {
-	input = strings.ToLower(input)
-
 	dayPart := strings.Trim(input[start:], parserCutset)
 	if len(dayPart) < 3 {
 		return -1, errors.New("day is too short")
