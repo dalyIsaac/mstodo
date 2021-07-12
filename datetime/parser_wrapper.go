@@ -15,30 +15,11 @@ You should have received a copy of the GNU General Public License
 along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-package api
+package datetime
 
-import (
-	"encoding/json"
+import "time"
 
-	"github.com/iancoleman/strcase"
-)
 
-// Used for unmarshalling camelcase into normal text
-type GraphStatus string
-
-func (status *GraphStatus) UnmarshalJSON(b []byte) (err error) {
-	var str string
-	if err := json.Unmarshal(b, &str); err != nil {
-		return err
-	}
-
-	*status = GraphStatus(strcase.ToDelimited(str, ' '))
-	return nil
+type parserWrapper struct {
+	now func() time.Time
 }
-
-// Marshal is called by TodoTask.MarshalJSON
-func (status *GraphStatus) Marshal() (string) {
-	return strcase.ToLowerCamel(string(*status))
-}
-
-var GraphStatusOptions = []string{"not started", "in progress", "completed", "waiting on others", "deferred"}

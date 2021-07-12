@@ -62,9 +62,7 @@ func createViewCmd() *cobra.Command {
 		Use:   "view <list name>",
 		Short: "View a specific list",
 		Long: `View a specific task list.
-
 Dates can be filtered using by specifying the start and/or end date you're interested in. For example:
-
 --reminder="start Monday; end fri"`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if len(args) < 1 {
@@ -218,7 +216,7 @@ func setStringFilter(filter **regexp.Regexp, flag string) error {
 }
 
 func setDateFilter(filter **datetime.DateFilters, flag string) error {
-	res, err := datetime.Parser(flag)
+	res, err := datetime.DateStartEndParser(flag)
 	if err != nil {
 		return err
 	}

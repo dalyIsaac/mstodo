@@ -18,6 +18,7 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 package api
 
 import (
+	"encoding/json"
 	"fmt"
 	"time"
 
@@ -35,6 +36,39 @@ type TodoTask struct {
 	Completed            *datetime.GraphTime `json:"completedDateTime"`
 	CreatedDateTime      time.Time           `json:"createdDateTime"`
 	LastModifiedDateTime time.Time           `json:"lastModifiedDateTime"`
+}
+
+type todoTaskMarshal struct {
+	Title            string                     `json:"title"`
+	Importance       string                     `json:"importance"`
+	IsReminderOn     bool                       `json:"isReminderOn"`
+	Status           string                     `json:"status"`
+	ReminderDateTime *datetime.GraphTimeMarshal `json:"reminderDateTime"`
+	DueDateTime      *datetime.GraphTimeMarshal `json:"dueDateTime"`
+}
+
+func (t *TodoTask) MarshalJSON() ([]byte, error) {
+	var reminderDateTime *datetime.GraphTimeMarshal = nil
+	var dueDateTime *datetime.GraphTimeMarshal = nil
+
+	if t.ReminderDateTime != nil {
+		reminderDateTime = t.ReminderDateTime.Marshal()
+	}
+
+	if t.DueDateTime != nil {
+		dueDateTime = t.DueDateTime.Marshal()
+	}
+
+	marshal := todoTaskMarshal{
+		Title:            t.Title,
+		Importance:       t.Importance,
+		IsReminderOn:     t.IsReminderOn,
+		Status:           t.Status.Marshal(),
+		ReminderDateTime: reminderDateTime,
+		DueDateTime:      dueDateTime,
+	}
+
+	return json.Marshal(marshal)
 }
 
 type TodoTaskList []TodoTask
@@ -59,4 +93,32 @@ func GetTasks(listId string) (*TodoTaskList, error) {
 
 	tasks := resp.Result().(*todoTaskListResponse).Value
 	return &tasks, nil
+}
+
+func CreateTask(listId string, task *TodoTask) error {
+	// Create request
+	req, err := CreateRequest()
+	if err != nil {
+		return err
+	}
+
+	// Post request
+	url := fmt.Sprintf("/me/todo/lists/%v/tasks", listId)
+	body, err := json.Marshal(&task)
+	if err != nil {
+		return err
+	}
+
+	fmt.Println(string(body))
+
+	resp, err := req.SetHeader("Content-Type", "application/json").SetBody(body).Post(url)
+	if err != nil {
+		return err
+	}
+
+	if code := resp.StatusCode(); code != 201 {
+		return fmt.Errorf("http code %v\n%v", code, string(resp.Body()))
+	}
+
+	return nil
 }
