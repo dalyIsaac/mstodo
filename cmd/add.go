@@ -51,7 +51,7 @@ func createAddCmd() *cobra.Command {
 	addCmd := &cobra.Command{
 		Use:   "add <task title>",
 		Short: "Add a task",
-		Long:  "Add a task",
+		Long:  `Add a task`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if len(args) < 1 {
 				return errors.New("missing task name")
