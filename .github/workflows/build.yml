@@ -23,4 +23,4 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           goos: ${{ matrix.goos }}
           goarch: ${{ matrix.goarch }}
-          ldflags: "-s -w -X 'github.com/dalyisaac/mstodo/build.Version=v1.0.0'"
+          ldflags: "-s -w -X 'github.com/dalyisaac/mstodo/build.Version=${{ steps.tagName.outputs.tag }}'"
