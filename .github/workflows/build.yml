@@ -14,13 +14,11 @@ jobs:
         goarch: [amd64]
     steps:
       - uses: actions/checkout@v2
-      - uses: olegtarasov/get-tag@v2.1
-        id: tagName
-        with:
-          tagRegex: "v.*"
+      - name: Set APP_VERSION env
+        run: echo APP_VERSION=$(echo ${GITHUB_REF} | rev | cut -d'/' -f 1 | rev ) >> ${GITHUB_ENV}
       - uses: wangyoucao577/go-release-action@v1.18
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           goos: ${{ matrix.goos }}
           goarch: ${{ matrix.goarch }}
-          ldflags: "-s -w -X 'github.com/dalyisaac/mstodo/build.Version=${{ steps.tagName.outputs.tag }}'"
+          ldflags: -s -w -X 'github.com/dalyisaac/mstodo/build.Version=${{env.APP_VERSION}}'
