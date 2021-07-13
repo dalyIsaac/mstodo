@@ -1,0 +1,24 @@
+name: Release mstodo
+
+on:
+  release:
+    types: [created]
+
+jobs:
+  releases-matrix:
+    name: Release binary
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        goos: [linux, darwin, windows]
+        goarch: [amd64]
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set APP_VERSION env
+        run: echo APP_VERSION=$(echo ${GITHUB_REF} | rev | cut -d'/' -f 1 | rev ) >> ${GITHUB_ENV}
+      - uses: wangyoucao577/go-release-action@v1.18
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          goos: ${{ matrix.goos }}
+          goarch: ${{ matrix.goarch }}
+          ldflags: -s -w -X 'github.com/dalyisaac/mstodo/build.Version=${{env.APP_VERSION}}'
