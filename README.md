@@ -8,6 +8,26 @@
 
 Download the latest release from the [Releases](https://github.com/dalyIsaac/mstodo/releases) page. Add the folder containing `mstodo` to the `PATH`.
 
+## Prerequisites
+
+You need to create a folder in `$HOME`, with a file `.mstodo/config.yaml`
+
+```txt
+.mstodo
+└── config.yaml
+```
+
+Populate `config.yaml` with:
+
+```yaml
+client-id: the-copied-application-client-id
+client-secret: the-copied-value
+port: 12345 # The port you want mstodo to run on
+auth-timeout: 120 # How long you want to wait until authentication times out
+```
+
+To obtain the `client-id` and `client-secret`, see [docs/api_key.md](docs/api_key.md).
+
 ## Usage
 
 ```txt
