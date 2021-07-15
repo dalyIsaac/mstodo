@@ -1,4 +1,4 @@
-name: Go
+name: Pushes and Pull Requests
 
 on:
   push:
