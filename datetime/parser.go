@@ -99,13 +99,9 @@ func contains(s string, substring string) int {
 
 var dateLayouts = []string{
 	"02/Jan/2006",
-	"02/JAN/2006",
 	"02-Jan-2006",
-	"02-JAN-2006",
 	"02-Jan-06",
-	"02-JAN-06",
 	"2/Jan/2006",
-	"2/JAN/2006",
 	"02/01/2006",
 	"2/01/2006",
 	"2/01",
@@ -114,6 +110,18 @@ var dateLayouts = []string{
 	"Jan 02, 2006",
 	"Jan 02",
 	"Jan 2",
+	"02/January/2006",
+	"02-January-2006",
+	"02-January-06",
+	"2/January/2006",
+	"02/01/2006",
+	"2/01/2006",
+	"2/01",
+	"02-January 2006",
+	"02-January",
+	"January 02, 2006",
+	"January 02",
+	"January 2",
 	"January 02, 2006",
 }
 
