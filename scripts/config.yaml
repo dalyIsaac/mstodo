@@ -1,0 +1,4 @@
+client-id: the-copied-application-client-id
+client-secret: the-copied-value
+port: 12345 # The port you want mstodo to run on
+auth-timeout: 120 # How long you want to wait until authentication times out
