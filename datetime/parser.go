@@ -193,6 +193,9 @@ func (parser *parserWrapper) parse(input string, startIdx int, parseType parseTy
 		return combined, nil
 	}
 
+	if parseType == dateTimeParseType {
+		return nil, errors.New("invalid date time")
+	}
 	return nil, errors.New("invalid date")
 }
 
