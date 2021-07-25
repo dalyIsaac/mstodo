@@ -22,3 +22,4 @@ jobs:
           goos: ${{ matrix.goos }}
           goarch: ${{ matrix.goarch }}
           ldflags: -s -w -X 'github.com/dalyisaac/mstodo/build.Version=${{env.APP_VERSION}}'
+          extra_files: scripts/config.yaml

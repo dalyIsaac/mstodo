@@ -6,7 +6,21 @@
 
 ## Install
 
-Download the latest release from the [Releases](https://github.com/dalyIsaac/mstodo/releases) page. Add the folder containing `mstodo` to the `PATH`.
+Download the latest release from the [Releases](https://github.com/dalyIsaac/mstodo/releases) page:
+
+Alternatively, for Linux/macOS:
+
+```shell
+curl -L https://github.com/dalyIsaac/mstodo/main/scripts/install.sh | VERSION=v1.0.0 bash # Replace `v1.0.0` with the version you want
+```
+
+Alternatively, for Windows:
+
+```powershell
+$env:VERSION = 'v1.0.0'; curl -L https://github.com/dalyIsaac/mstodo/main/scripts/install.ps1 | iex
+```
+
+Add the folder containing `mstodo` to the `PATH`.
 
 ## Prerequisites
 
