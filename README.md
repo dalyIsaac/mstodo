@@ -14,13 +14,7 @@ Alternatively, for Linux/macOS:
 curl -sL https://github.com/dalyIsaac/mstodo/main/scripts/install.sh | VERSION=v1.0.0 bash # Replace `v1.0.0` with the version you want
 ```
 
-Alternatively, for Windows:
-
-```powershell
-curl -L https://github.com/dalyIsaac/mstodo/main/scripts/install.ps1 | iex -version "v1.0.0" -directory "C:\Program Files\mstodo"
-```
-
-Add the folder containing `mstodo` to the `PATH`.
+Add the folder containing `mstodo` or `mstodo.exe` to the `PATH`.
 
 ## Prerequisites
 
