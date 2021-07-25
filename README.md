@@ -11,13 +11,13 @@ Download the latest release from the [Releases](https://github.com/dalyIsaac/mst
 Alternatively, for Linux/macOS:
 
 ```shell
-curl -L https://github.com/dalyIsaac/mstodo/main/scripts/install.sh | VERSION=v1.0.0 bash # Replace `v1.0.0` with the version you want
+curl -sL https://github.com/dalyIsaac/mstodo/main/scripts/install.sh | VERSION=v1.0.0 bash # Replace `v1.0.0` with the version you want
 ```
 
 Alternatively, for Windows:
 
 ```powershell
-$env:VERSION = 'v1.0.0'; curl -L https://github.com/dalyIsaac/mstodo/main/scripts/install.ps1 | iex
+curl -L https://github.com/dalyIsaac/mstodo/main/scripts/install.ps1 | iex -version "v1.0.0" -directory "C:\Program Files\mstodo"
 ```
 
 Add the folder containing `mstodo` to the `PATH`.
